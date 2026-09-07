@@ -87,10 +87,6 @@ export default function Step1Vin({ submission, onSaved, onContinue }: WizardStep
       >
         {decoding ? 'Decoding…' : 'Decode VIN'}
       </button>
-
-      <p className="mt-4 rounded-md bg-ink-50 p-3 text-xs text-ink-500">
-        Decoding uses the free NHTSA vPIC service. You can correct any field it returns.
-      </p>
     </form>
   );
 }
