@@ -82,7 +82,10 @@ export const PHOTO_SLOTS = [
   { key: 'odometer', label: 'Odometer' },
   { key: 'vin_label', label: 'VIN label' },
   { key: 'dashboard', label: 'Dash' },
-  { key: 'damage', label: 'Damage (up to 4)' },
+  { key: 'damage_1', label: 'Damage 1' },
+  { key: 'damage_2', label: 'Damage 2' },
+  { key: 'damage_3', label: 'Damage 3' },
+  { key: 'damage_4', label: 'Damage 4' },
 ] as const;
 
 export const PHOTO_SLOT_KEYS = PHOTO_SLOTS.map((slot) => slot.key) as [string, ...string[]];
@@ -90,7 +93,6 @@ export const photoSlotSchema = z.enum(PHOTO_SLOT_KEYS);
 export type PhotoSlot = z.infer<typeof photoSlotSchema>;
 
 export const MIN_REQUIRED_PHOTOS = 6;
-export const MAX_DAMAGE_PHOTOS = 4;
 
 export function photoSlotLabel(slot: string): string {
   return PHOTO_SLOTS.find((s) => s.key === slot)?.label ?? slot;
