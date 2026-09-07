@@ -3,6 +3,8 @@ import cors from 'cors';
 import express, { type Request, type Response } from 'express';
 import { vehicleSchema } from '@sourcethevin/shared';
 import { authRouter } from './routes/auth';
+import { submissionsRouter } from './routes/submissions';
+import { vinRouter } from './routes/vin';
 
 export function createApp() {
   const app = express();
@@ -29,6 +31,8 @@ export function createApp() {
   });
 
   app.use('/auth', authRouter);
+  app.use('/vin', vinRouter);
+  app.use('/submissions', submissionsRouter);
 
   return app;
 }

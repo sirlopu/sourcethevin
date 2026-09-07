@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import WizardShell from './components/wizard/WizardShell';
 import { AuthProvider, useAuth } from './lib/auth-context';
 import { roleHome } from './lib/role';
 import AdminUsers from './pages/AdminUsers';
@@ -26,6 +27,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={['seller']}>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/wizard/:id/:step"
+          element={
+            <ProtectedRoute roles={['seller']}>
+              <WizardShell />
             </ProtectedRoute>
           }
         />
