@@ -98,22 +98,27 @@ export function photoSlotLabel(slot: string): string {
   return PHOTO_SLOTS.find((s) => s.key === slot)?.label ?? slot;
 }
 
-// ── PATCH payload (autosave) ────────────────────────────────────────────────
+// ── Create and PATCH payloads ────────────────────────────────────────────────
+
+export const decodedVehicleSchema = z.object({
+  year: z.number().int().nullable(),
+  make: z.string().nullable(),
+  model: z.string().nullable(),
+  trim: z.string().nullable(),
+  drivetrain: z.string().nullable(),
+  engine: z.string().nullable(),
+});
+
+export const submissionCreateSchema = z.object({
+  vin: vinSchema,
+  decoded: decodedVehicleSchema,
+});
+export type SubmissionCreate = z.infer<typeof submissionCreateSchema>;
 
 export const submissionPatchSchema = z.object({
   currentStep: z.number().int().gte(1).lte(6).optional(),
   vin: vinSchema.optional(),
-  decoded: z
-    .object({
-      year: z.number().int().nullable(),
-      make: z.string().nullable(),
-      model: z.string().nullable(),
-      trim: z.string().nullable(),
-      drivetrain: z.string().nullable(),
-      engine: z.string().nullable(),
-    })
-    .nullable()
-    .optional(),
+  decoded: decodedVehicleSchema.nullable().optional(),
   vehicle: vehicleInfoSchema.partial().optional(),
   condition: conditionSchema.partial().optional(),
   payoff: payoffSchema.partial().optional(),

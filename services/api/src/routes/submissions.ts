@@ -4,6 +4,7 @@ import {
   MIN_REQUIRED_PHOTOS,
   offerCreateInputSchema,
   photoSlotSchema,
+  submissionCreateSchema,
   submissionPatchSchema,
   valuationInputSchema,
   valuationOverrideInputSchema,
@@ -112,13 +113,23 @@ async function enrichForDeskView(submissions: InstanceType<typeof Submission>[],
 }
 
 submissionsRouter.post('/', requireRole('seller'), async (req: Request, res: Response) => {
+  const parsed = submissionCreateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  const { vin, decoded } = parsed.data;
   const referenceId = await nextSubmissionReferenceId();
   const submission = await Submission.create({
     referenceId,
     sellerId: req.user!.id,
     tenantId: req.user!.tenantId,
     status: 'new',
-    currentStep: 1,
+    currentStep: 2,
+    vin,
+    decoded,
+    vehicle: decoded,
   });
   res.status(201).json(submission);
 });
@@ -217,6 +228,21 @@ submissionsRouter.patch('/:id', requireRole('seller'), async (req: Request, res:
 
   await submission.save();
   res.status(200).json(submission);
+});
+
+submissionsRouter.delete('/:id', requireRole('seller'), async (req: Request, res: Response) => {
+  const submission = await loadSellerOwnedSubmission(paramId(req), req.user!.id);
+  if (!submission) {
+    res.status(404).json({ error: 'Submission not found' });
+    return;
+  }
+  if (submission.status !== 'new') {
+    res.status(409).json({ error: 'Only drafts can be deleted' });
+    return;
+  }
+
+  await submission.deleteOne();
+  res.status(204).send();
 });
 
 const photoSignBodySchema = z.object({ slot: photoSlotSchema });

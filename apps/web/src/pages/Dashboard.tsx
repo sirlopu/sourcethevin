@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth-context';
 import { listSubmissions, type SubmissionListItem } from '../lib/desk-api';
 import { statusBadge } from '../lib/submission-status';
 import { useStartSubmission } from '../lib/useStartSubmission';
+import { deleteSubmission } from '../lib/wizard-api';
 
 export default function Dashboard() {
   const { authFetch } = useAuth();
@@ -13,6 +14,7 @@ export default function Dashboard() {
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submissions, setSubmissions] = useState<SubmissionListItem[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,6 +36,21 @@ export default function Dashboard() {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
       setStarting(false);
+    }
+  }
+
+  async function handleDelete(item: SubmissionListItem, vehicle: string) {
+    if (!window.confirm(`Delete the draft for ${vehicle}? This cannot be undone.`)) return;
+
+    setDeletingId(item._id);
+    setError(null);
+    try {
+      await deleteSubmission(authFetch, item._id);
+      setSubmissions((current) => current.filter((submission) => submission._id !== item._id));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Unable to delete this draft.');
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -73,23 +90,39 @@ export default function Dashboard() {
               const badge = statusBadge(item.status);
               const isDraft = item.status === 'new';
               return (
-                <Link
-                  key={item._id}
-                  to={
-                    isDraft ? `/wizard/${item._id}/${item.currentStep}` : `/submissions/${item._id}`
-                  }
-                  className="flex items-center justify-between gap-3 p-3 text-sm hover:bg-ink-50"
-                >
-                  <div>
-                    <p className="font-semibold text-ink-900">{vehicle}</p>
-                    <p className="font-mono text-xs text-ink-500">{item.referenceId}</p>
-                  </div>
-                  <span
-                    className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}
+                <div key={item._id} className="flex items-center text-sm hover:bg-ink-50">
+                  <Link
+                    to={
+                      isDraft
+                        ? `/wizard/${item._id}/${item.currentStep}`
+                        : `/submissions/${item._id}`
+                    }
+                    className="flex min-w-0 flex-1 items-center justify-between gap-3 p-3"
                   >
-                    ● {badge.label}
-                  </span>
-                </Link>
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-ink-900">{vehicle}</p>
+                      <p className="font-mono text-xs text-ink-500">{item.referenceId}</p>
+                    </div>
+                    <span
+                      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}
+                    >
+                      ● {badge.label}
+                    </span>
+                  </Link>
+                  {isDraft && (
+                    <button
+                      type="button"
+                      disabled={deletingId === item._id}
+                      onClick={() => {
+                        void handleDelete(item, vehicle);
+                      }}
+                      aria-label={`Delete draft ${vehicle}`}
+                      className="mr-3 rounded px-2 py-1 text-xs font-semibold text-danger hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {deletingId === item._id ? 'Deleting…' : 'Delete'}
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>

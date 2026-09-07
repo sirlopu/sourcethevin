@@ -13,9 +13,23 @@ import { WizardHeader } from './WizardHeader';
 
 export interface WizardStepProps {
   submission: SubmissionRecord;
+  isNew?: boolean;
   onSaved: (updated: SubmissionRecord) => void;
-  onContinue: (nextStep: number) => void;
+  onContinue: (nextStep: number, submissionId?: string) => void;
 }
+
+const NEW_SUBMISSION: SubmissionRecord = {
+  _id: 'new',
+  referenceId: '',
+  status: 'new',
+  currentStep: 1,
+  vehicle: {},
+  condition: { cosmeticIssues: [] },
+  payoff: {},
+  photos: [],
+  createdAt: '',
+  updatedAt: '',
+};
 
 const STEP_COMPONENTS: Record<number, React.ComponentType<WizardStepProps>> = {
   1: Step1Vin,
@@ -29,13 +43,14 @@ const STEP_COMPONENTS: Record<number, React.ComponentType<WizardStepProps>> = {
 export default function WizardShell() {
   const { id, step } = useParams<{ id: string; step: string }>();
   const stepNumber = Number(step);
+  const isNew = id === 'new';
   const navigate = useNavigate();
   const { authFetch } = useAuth();
   const [submission, setSubmission] = useState<SubmissionRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || isNew) return;
     let cancelled = false;
     getSubmission(authFetch, id)
       .then((loaded) => {
@@ -48,9 +63,15 @@ export default function WizardShell() {
     return () => {
       cancelled = true;
     };
-  }, [id, authFetch]);
+  }, [id, isNew, authFetch]);
 
-  if (!id || !Number.isInteger(stepNumber) || stepNumber < 1 || stepNumber > 6) {
+  if (
+    !id ||
+    !Number.isInteger(stepNumber) ||
+    stepNumber < 1 ||
+    stepNumber > 6 ||
+    (isNew && stepNumber !== 1)
+  ) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -67,12 +88,15 @@ export default function WizardShell() {
         />
         <div className="p-6 sm:p-8">
           {error && <p className="text-sm font-medium text-danger">{error}</p>}
-          {!error && !submission && <p className="text-sm text-ink-500">Loading…</p>}
-          {!error && submission && (
+          {!error && !isNew && !submission && <p className="text-sm text-ink-500">Loading…</p>}
+          {!error && (isNew || submission) && (
             <StepComponent
-              submission={submission}
+              submission={isNew ? NEW_SUBMISSION : submission!}
+              isNew={isNew}
               onSaved={setSubmission}
-              onContinue={(nextStep) => navigate(`/wizard/${id}/${nextStep}`)}
+              onContinue={(nextStep, submissionId) =>
+                navigate(`/wizard/${submissionId ?? id}/${nextStep}`)
+              }
             />
           )}
         </div>
