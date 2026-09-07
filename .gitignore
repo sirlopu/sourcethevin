@@ -98,5 +98,3 @@ server/.env.staging
 /playwright-report/
 /test-results/
 /.claude/
-.editorconfig
-.env.example

@@ -1,0 +1,149 @@
+import { Router, type Request, type Response } from 'express';
+import { Types } from 'mongoose';
+import { authRateLimiter } from '../middleware/rateLimit';
+import { hashPassword, verifyPassword } from '../lib/password';
+import { generateRefreshToken, hashRefreshToken, signAccessToken } from '../lib/tokens';
+import { User } from '../models/User';
+import { loginSchema, registerSellerRequestSchema } from '../validation/auth';
+
+const REFRESH_COOKIE_NAME = 'refreshToken';
+const REFRESH_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+function setRefreshCookie(res: Response, token: string): void {
+  res.cookie(REFRESH_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: REFRESH_COOKIE_MAX_AGE_MS,
+    path: '/auth',
+  });
+}
+
+function clearRefreshCookie(res: Response): void {
+  res.clearCookie(REFRESH_COOKIE_NAME, { path: '/auth' });
+}
+
+export const authRouter = Router();
+authRouter.use(authRateLimiter);
+
+authRouter.post('/register-seller-request', async (req: Request, res: Response) => {
+  const parsed = registerSellerRequestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const { email, password, dealership } = parsed.data;
+
+  const existing = await User.findOne({ email });
+  if (existing) {
+    res.status(409).json({ error: 'An account with this email already exists' });
+    return;
+  }
+
+  const passwordHash = await hashPassword(password);
+  const user = await User.create({
+    email,
+    passwordHash,
+    role: 'seller',
+    status: 'pending',
+    tenantId: new Types.ObjectId(),
+    dealership,
+  });
+
+  res.status(201).json({
+    id: user._id.toString(),
+    email: user.email,
+    status: user.status,
+  });
+});
+
+authRouter.post('/login', async (req: Request, res: Response) => {
+  const parsed = loginSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const { email, password } = parsed.data;
+
+  const user = await User.findOne({ email }).select('+passwordHash');
+  if (!user || !(await verifyPassword(user.passwordHash, password))) {
+    res.status(401).json({ error: 'Invalid email or password' });
+    return;
+  }
+  if (user.status !== 'active') {
+    res.status(403).json({ error: 'Account is not active' });
+    return;
+  }
+
+  const accessToken = signAccessToken({
+    sub: user._id.toString(),
+    role: user.role,
+    tenantId: user.tenantId.toString(),
+  });
+
+  const { token: refreshToken, hash, expiresAt } = generateRefreshToken();
+  user.refreshTokenHash = hash;
+  user.refreshTokenExpiresAt = expiresAt;
+  await user.save();
+
+  setRefreshCookie(res, refreshToken);
+  res.status(200).json({
+    accessToken,
+    user: {
+      id: user._id.toString(),
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenantId.toString(),
+    },
+  });
+});
+
+authRouter.post('/refresh', async (req: Request, res: Response) => {
+  const token = req.cookies?.[REFRESH_COOKIE_NAME] as string | undefined;
+  if (!token) {
+    res.status(401).json({ error: 'Missing refresh token' });
+    return;
+  }
+
+  const hash = hashRefreshToken(token);
+  const user = await User.findOne({ refreshTokenHash: hash }).select(
+    '+refreshTokenHash +refreshTokenExpiresAt',
+  );
+  if (!user || !user.refreshTokenExpiresAt || user.refreshTokenExpiresAt.getTime() < Date.now()) {
+    clearRefreshCookie(res);
+    res.status(401).json({ error: 'Invalid or expired refresh token' });
+    return;
+  }
+  if (user.status !== 'active') {
+    clearRefreshCookie(res);
+    res.status(403).json({ error: 'Account is not active' });
+    return;
+  }
+
+  const accessToken = signAccessToken({
+    sub: user._id.toString(),
+    role: user.role,
+    tenantId: user.tenantId.toString(),
+  });
+
+  const { token: nextRefreshToken, hash: nextHash, expiresAt } = generateRefreshToken();
+  user.refreshTokenHash = nextHash;
+  user.refreshTokenExpiresAt = expiresAt;
+  await user.save();
+
+  setRefreshCookie(res, nextRefreshToken);
+  res.status(200).json({ accessToken });
+});
+
+authRouter.post('/logout', async (req: Request, res: Response) => {
+  const token = req.cookies?.[REFRESH_COOKIE_NAME] as string | undefined;
+  if (token) {
+    const hash = hashRefreshToken(token);
+    await User.updateOne(
+      { refreshTokenHash: hash },
+      { refreshTokenHash: null, refreshTokenExpiresAt: null },
+    );
+  }
+  clearRefreshCookie(res);
+  res.status(204).send();
+});

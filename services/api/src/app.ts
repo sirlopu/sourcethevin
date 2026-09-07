@@ -1,0 +1,34 @@
+import cookieParser from 'cookie-parser';
+import cors from 'cors';
+import express, { type Request, type Response } from 'express';
+import { vehicleSchema } from '@sourcethevin/shared';
+import { authRouter } from './routes/auth';
+
+export function createApp() {
+  const app = express();
+  app.use(
+    cors({
+      origin: process.env.WEB_ORIGIN ?? 'http://localhost:5173',
+      credentials: true,
+    }),
+  );
+  app.use(express.json());
+  app.use(cookieParser());
+
+  app.get('/health', (_req: Request, res: Response) => {
+    res.status(200).json({ status: 'ok' });
+  });
+
+  app.post('/vehicles', (req: Request, res: Response) => {
+    const result = vehicleSchema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({ error: result.error.flatten() });
+      return;
+    }
+    res.status(201).json(result.data);
+  });
+
+  app.use('/auth', authRouter);
+
+  return app;
+}

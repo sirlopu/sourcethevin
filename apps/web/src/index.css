@@ -1,0 +1,37 @@
+@import 'tailwindcss';
+
+/* Brand tokens from SourceTheVIN's styleguide (navy/blue palette, Saira/Inter/JetBrains Mono type). */
+@theme {
+  --color-navy-900: #0a1f52;
+  --color-navy-800: #0e2a63;
+  --color-navy-700: #123574;
+  --color-navy-600: #1a4694;
+  --color-blue-600: #0a4ba8;
+  --color-blue-500: #0062c4;
+  --color-blue-400: #0e7bd6;
+  --color-blue-300: #3d9be8;
+  --color-blue-100: #c7d3ea;
+
+  --color-ink-900: #0f1729;
+  --color-ink-700: #374151;
+  --color-ink-500: #6b7280;
+  --color-ink-300: #d1d5db;
+  --color-ink-200: #e5e7eb;
+  --color-ink-100: #f1f4f9;
+  --color-ink-50: #f7f9fc;
+
+  --color-danger: #d22f2f;
+  --color-danger-bg: #fcecec;
+  --color-success: #12915a;
+  --color-success-bg: #e7f5ee;
+
+  --font-display: 'Saira', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-ink-50);
+  color: var(--color-ink-900);
+}

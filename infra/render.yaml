@@ -1,0 +1,34 @@
+# Render Blueprint for the services/api Express service.
+# https://render.com/docs/blueprint-spec
+#
+# All values below are read from environment variables set in the Render
+# dashboard (or via `render env`) — no secrets are committed here. Variables
+# marked `sync: false` must be set manually per environment.
+services:
+  - type: web
+    name: sourcethevin-api
+    runtime: node
+    plan: starter
+    region: oregon
+    branch: main
+    rootDir: .
+    buildCommand: npm ci
+    startCommand: npm run start --workspace services/api
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      # MongoDB connection string (Mongoose). Set in the Render dashboard.
+      - key: MONGODB_URI
+        sync: false
+      # Secret used to sign short-lived JWT access tokens. Set in the Render dashboard.
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      # Origin of the deployed web app, allowed to call this API with credentials (CORS).
+      - key: WEB_ORIGIN
+        sync: false
