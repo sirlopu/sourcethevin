@@ -4,9 +4,9 @@ import type { WizardStepProps } from '../../components/wizard/WizardShell';
 import { ApiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
 import { isValidVinChecksum } from '../../lib/vin-checksum';
-import { decodeVin, patchSubmission } from '../../lib/wizard-api';
+import { createSubmission, decodeVin, patchSubmission } from '../../lib/wizard-api';
 
-export default function Step1Vin({ submission, onSaved, onContinue }: WizardStepProps) {
+export default function Step1Vin({ submission, isNew, onSaved, onContinue }: WizardStepProps) {
   const { authFetch } = useAuth();
   const [vin, setVin] = useState(submission.vin ?? '');
   const [decoding, setDecoding] = useState(false);
@@ -22,28 +22,24 @@ export default function Step1Vin({ submission, onSaved, onContinue }: WizardStep
     setDecoding(true);
     try {
       const decoded = await decodeVin(authFetch, trimmedVin);
-      const updated = await patchSubmission(authFetch, submission._id, {
-        currentStep: 2,
-        vin: trimmedVin,
-        decoded: {
-          year: decoded.year,
-          make: decoded.make,
-          model: decoded.model,
-          trim: decoded.trim,
-          drivetrain: decoded.drivetrain,
-          engine: decoded.engine,
-        },
-        vehicle: {
-          year: decoded.year,
-          make: decoded.make,
-          model: decoded.model,
-          trim: decoded.trim,
-          drivetrain: decoded.drivetrain,
-          engine: decoded.engine,
-        },
-      });
+      const decodedVehicle = {
+        year: decoded.year,
+        make: decoded.make,
+        model: decoded.model,
+        trim: decoded.trim,
+        drivetrain: decoded.drivetrain,
+        engine: decoded.engine,
+      };
+      const updated = isNew
+        ? await createSubmission(authFetch, { vin: trimmedVin, decoded: decodedVehicle })
+        : await patchSubmission(authFetch, submission._id, {
+            currentStep: 2,
+            vin: trimmedVin,
+            decoded: decodedVehicle,
+            vehicle: decodedVehicle,
+          });
       onSaved(updated);
-      onContinue(2);
+      onContinue(2, updated._id);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
     } finally {

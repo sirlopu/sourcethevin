@@ -2,6 +2,7 @@ import type {
   Condition,
   Payoff,
   PhotoSlot,
+  SubmissionCreate,
   SubmissionPatch,
   VehicleInfo,
   VinDecodeResult,
@@ -44,8 +45,10 @@ export function decodeVin(authFetch: AuthFetch, vin: string) {
   return parseJson<VinDecodeResult & { cached: boolean }>(authFetch(`/vin/${vin}/decode`));
 }
 
-export function createSubmission(authFetch: AuthFetch) {
-  return parseJson<SubmissionRecord>(authFetch('/submissions', { method: 'POST' }));
+export function createSubmission(authFetch: AuthFetch, input: SubmissionCreate) {
+  return parseJson<SubmissionRecord>(
+    authFetch('/submissions', { method: 'POST', body: JSON.stringify(input) }),
+  );
 }
 
 export function getSubmission(authFetch: AuthFetch, id: string) {
@@ -56,6 +59,18 @@ export function patchSubmission(authFetch: AuthFetch, id: string, patch: Submiss
   return parseJson<SubmissionRecord>(
     authFetch(`/submissions/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   );
+}
+
+export async function deleteSubmission(authFetch: AuthFetch, id: string) {
+  const response = await authFetch(`/submissions/${id}`, { method: 'DELETE' });
+  if (!response.ok) {
+    const body: unknown = await response.json().catch(() => undefined);
+    const message =
+      body && typeof body === 'object' && 'error' in body && typeof body.error === 'string'
+        ? body.error
+        : 'Unable to delete this draft. Please try again.';
+    throw new ApiError(response.status, message);
+  }
 }
 
 export interface SignedPhotoUpload {

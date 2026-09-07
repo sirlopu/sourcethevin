@@ -154,10 +154,11 @@ The API listens on port `4000` by default. Implemented routes include:
 | `POST /auth/refresh`                       | Refresh cookie            | Rotate the refresh token and issue an access token         |
 | `POST /auth/logout`                        | Refresh cookie            | Revoke the current refresh token                           |
 | `GET /vin/:vin/decode`                     | Authenticated             | Decode and cache a 17-character VIN                        |
-| `POST /submissions`                        | Seller                    | Create a draft submission                                  |
+| `POST /submissions`                        | Seller                    | Create a decoded-VIN draft submission                      |
 | `GET /submissions`                         | Seller, Trade Desk, admin | List submissions within the caller's role and tenant scope |
 | `GET /submissions/:id`                     | Seller, Trade Desk, admin | Retrieve a viewable submission                             |
 | `PATCH /submissions/:id`                   | Seller owner              | Autosave wizard data                                       |
+| `DELETE /submissions/:id`                  | Seller owner              | Delete a draft submission                                  |
 | `POST /submissions/:id/photos/sign`        | Seller owner              | Create a signed Cloudinary upload payload                  |
 | `POST /submissions/:id/photos`             | Seller owner              | Confirm an uploaded photo                                  |
 | `POST /submissions/:id/submit`             | Seller owner              | Submit a completed draft                                   |
