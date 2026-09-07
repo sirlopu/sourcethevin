@@ -63,6 +63,7 @@ export default function WizardShell() {
           step={stepNumber}
           onExit={() => navigate('/dashboard')}
           exitLabel={stepNumber === 1 ? 'Cancel' : 'Save & exit'}
+          onBack={stepNumber > 1 ? () => navigate(`/wizard/${id}/${stepNumber - 1}`) : undefined}
         />
         <div className="p-6 sm:p-8">
           {error && <p className="text-sm font-medium text-danger">{error}</p>}
