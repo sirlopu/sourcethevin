@@ -8,19 +8,7 @@ import type {
 } from '@sourcethevin/shared';
 import { ApiError } from './api';
 import type { AuthFetch } from './auth-context';
-
-async function parseJson<T>(responsePromise: Promise<Response>): Promise<T> {
-  const response = await responsePromise;
-  const body: unknown = await response.json().catch(() => undefined);
-  if (!response.ok) {
-    const message =
-      body && typeof body === 'object' && 'error' in body && typeof body.error === 'string'
-        ? body.error
-        : 'Something went wrong. Please try again.';
-    throw new ApiError(response.status, message);
-  }
-  return body as T;
-}
+import { parseJson } from './http';
 
 export interface SubmissionPhoto {
   slot: PhotoSlot;
@@ -48,6 +36,8 @@ export interface SubmissionRecord {
   payoff: Partial<Payoff>;
   photos: SubmissionPhoto[];
   submittedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export function decodeVin(authFetch: AuthFetch, vin: string) {

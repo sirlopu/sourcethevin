@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express';
-import { Types } from 'mongoose';
 import { authRateLimiter } from '../middleware/rateLimit';
 import { hashPassword, verifyPassword } from '../lib/password';
+import { DEFAULT_TENANT_ID } from '../lib/tenant';
 import { generateRefreshToken, hashRefreshToken, signAccessToken } from '../lib/tokens';
 import { User } from '../models/User';
 import { loginSchema, registerSellerRequestSchema } from '../validation/auth';
@@ -46,7 +46,7 @@ authRouter.post('/register-seller-request', async (req: Request, res: Response) 
     passwordHash,
     role: 'seller',
     status: 'pending',
-    tenantId: new Types.ObjectId(),
+    tenantId: DEFAULT_TENANT_ID,
     dealership,
   });
 

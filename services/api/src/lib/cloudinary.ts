@@ -38,6 +38,11 @@ export function createSignedUpload(publicId: string): SignedUploadParams {
   };
 }
 
+/** Namespaces every submission photo under sourcethevin/<referenceId>/<slot> in Cloudinary. */
+export function buildSubmissionPhotoPublicId(referenceId: string, slot: string): string {
+  return `sourcethevin/${referenceId}/${slot}`;
+}
+
 export function isValidCloudinaryUrl(url: string, cloudName: string): boolean {
   try {
     const parsed = new URL(url);
