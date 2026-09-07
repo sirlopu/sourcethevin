@@ -6,6 +6,7 @@ import { roleHome } from './lib/role';
 import AdminUsers from './pages/AdminUsers';
 import Dashboard from './pages/Dashboard';
 import DeskQueue from './pages/DeskQueue';
+import SubmissionDetail from './pages/desk/SubmissionDetail';
 import RequestSellerAccess from './pages/RequestSellerAccess';
 import SignIn from './pages/SignIn';
 
@@ -43,6 +44,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={['trade_desk']}>
               <DeskQueue />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/desk/submissions/:id"
+          element={
+            <ProtectedRoute roles={['trade_desk']}>
+              <SubmissionDetail />
             </ProtectedRoute>
           }
         />

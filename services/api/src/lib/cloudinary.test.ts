@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createSignedUpload, isValidCloudinaryUrl } from './cloudinary';
+import {
+  buildSubmissionPhotoPublicId,
+  createSignedUpload,
+  isValidCloudinaryUrl,
+} from './cloudinary';
 
 beforeEach(() => {
   process.env.CLOUDINARY_CLOUD_NAME = 'demo-cloud';
@@ -57,5 +61,25 @@ describe('isValidCloudinaryUrl', () => {
 
   it('rejects a malformed URL instead of throwing', () => {
     expect(isValidCloudinaryUrl('not a url', 'demo-cloud')).toBe(false);
+  });
+});
+
+describe('buildSubmissionPhotoPublicId', () => {
+  it('namespaces the photo under sourcethevin/<referenceId>/<slot>', () => {
+    expect(buildSubmissionPhotoPublicId('STV-2026-00001', 'front')).toBe(
+      'sourcethevin/STV-2026-00001/front',
+    );
+  });
+
+  it('produces distinct ids for different slots of the same trade', () => {
+    const front = buildSubmissionPhotoPublicId('STV-2026-00001', 'front');
+    const rear = buildSubmissionPhotoPublicId('STV-2026-00001', 'rear');
+    expect(front).not.toBe(rear);
+  });
+
+  it('produces distinct ids for the same slot across different trades', () => {
+    const first = buildSubmissionPhotoPublicId('STV-2026-00001', 'front');
+    const second = buildSubmissionPhotoPublicId('STV-2026-00002', 'front');
+    expect(first).not.toBe(second);
   });
 });
