@@ -33,7 +33,9 @@ async function main() {
       photo.slot = nextSlot;
     }
 
-    submission.photos = submission.photos.filter((photo) => photo.slot != null) as typeof submission.photos;
+    submission.photos = submission.photos.filter(
+      (photo) => photo.slot != null,
+    ) as typeof submission.photos;
 
     await submission.save({ validateBeforeSave: true });
     updated += 1;
