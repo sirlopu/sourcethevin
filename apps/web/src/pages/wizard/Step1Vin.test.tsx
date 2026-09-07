@@ -65,14 +65,7 @@ describe('Step1Vin', () => {
     const user = userEvent.setup();
     const onSaved = vi.fn();
     const onContinue = vi.fn();
-    render(
-      <Step1Vin
-        submission={newSubmission}
-        isNew
-        onSaved={onSaved}
-        onContinue={onContinue}
-      />,
-    );
+    render(<Step1Vin submission={newSubmission} isNew onSaved={onSaved} onContinue={onContinue} />);
 
     expect(mocks.createSubmission).not.toHaveBeenCalled();
 
@@ -93,14 +86,7 @@ describe('Step1Vin', () => {
   it('does not create a draft when VIN decoding fails', async () => {
     mocks.decodeVin.mockRejectedValue(new Error('decode failed'));
     const user = userEvent.setup();
-    render(
-      <Step1Vin
-        submission={newSubmission}
-        isNew
-        onSaved={vi.fn()}
-        onContinue={vi.fn()}
-      />,
-    );
+    render(<Step1Vin submission={newSubmission} isNew onSaved={vi.fn()} onContinue={vi.fn()} />);
 
     await user.type(screen.getByLabelText('VIN'), decoded.vin);
     await user.click(screen.getByRole('button', { name: 'Decode VIN' }));
