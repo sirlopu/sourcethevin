@@ -10,7 +10,13 @@ import {
   WARNING_LIGHTS_OPTIONS,
 } from '@sourcethevin/shared';
 
-export const SUBMISSION_STATUSES = ['new', 'submitted'] as const;
+export const SUBMISSION_STATUSES = [
+  'new',
+  'submitted',
+  'offer_sent',
+  'accepted',
+  'declined',
+] as const;
 export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
 
 const decodedSchema = new Schema(
