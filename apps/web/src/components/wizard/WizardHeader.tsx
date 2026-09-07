@@ -2,15 +2,32 @@ interface WizardHeaderProps {
   step: number;
   onExit?: () => void;
   exitLabel?: string;
+  onBack?: () => void;
 }
 
-export function WizardHeader({ step, onExit, exitLabel = 'Save & exit' }: WizardHeaderProps) {
+export function WizardHeader({
+  step,
+  onExit,
+  exitLabel = 'Save & exit',
+  onBack,
+}: WizardHeaderProps) {
   return (
     <div className="rounded-t-xl bg-gradient-to-br from-navy-700 to-navy-900 px-6 py-4">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-xs font-semibold tracking-wide text-blue-100">
-          STEP {step} OF 6
-        </span>
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="text-xs font-semibold text-blue-100 hover:text-white"
+            >
+              ← Back
+            </button>
+          )}
+          <span className="font-mono text-xs font-semibold tracking-wide text-blue-100">
+            STEP {step} OF 6
+          </span>
+        </div>
         {onExit && (
           <button
             type="button"
