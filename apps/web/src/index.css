@@ -24,6 +24,8 @@
   --color-danger-bg: #fcecec;
   --color-success: #12915a;
   --color-success-bg: #e7f5ee;
+  --color-warning: #c97a00;
+  --color-warning-bg: #fdf3e2;
 
   --font-display: 'Saira', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, sans-serif;

@@ -9,12 +9,16 @@ export interface AuthUser {
   tenantId: string;
 }
 
+export type AuthFetch = (path: string, init?: RequestInit) => Promise<Response>;
+
 interface AuthContextValue {
   user: AuthUser | null;
   accessToken: string | null;
   initializing: boolean;
   signIn: (email: string, password: string) => Promise<AuthUser>;
   signOut: () => Promise<void>;
+  /** fetch() against the API, attaching the access token and retrying once after a silent refresh on 401. */
+  authFetch: AuthFetch;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -72,8 +76,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const authFetch = useCallback<AuthFetch>(
+    async (path, init = {}) => {
+      const request = (token: string | null) =>
+        fetch(`${api.API_BASE_URL}${path}`, {
+          ...init,
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...init.headers,
+          },
+        });
+
+      const response = await request(accessToken);
+      if (response.status !== 401) {
+        return response;
+      }
+
+      try {
+        const refreshed = await api.refresh();
+        setAccessToken(refreshed.accessToken);
+        setUser((current) => current ?? decodeAccessTokenUser(refreshed.accessToken));
+        return await request(refreshed.accessToken);
+      } catch {
+        setAccessToken(null);
+        setUser(null);
+        return response;
+      }
+    },
+    [accessToken],
+  );
+
   return (
-    <AuthContext.Provider value={{ user, accessToken, initializing, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, accessToken, initializing, signIn, signOut, authFetch }}>
       {children}
     </AuthContext.Provider>
   );
