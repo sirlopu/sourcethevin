@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PHOTO_SLOTS } from '@sourcethevin/shared';
 import type { WizardStepProps } from '../../components/wizard/WizardShell';
 import { ApiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
@@ -82,7 +83,10 @@ export default function Step6Review({ submission, onSaved }: WizardStepProps) {
         </SummaryCard>
 
         <SummaryCard title="Photos">
-          <SummaryRow label="Uploaded" value={`${submission.photos.length} of 9`} />
+          <SummaryRow
+            label="Uploaded"
+            value={`${submission.photos.length} of ${PHOTO_SLOTS.length}`}
+          />
         </SummaryCard>
       </div>
 

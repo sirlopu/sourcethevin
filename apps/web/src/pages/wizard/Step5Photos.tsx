@@ -19,9 +19,9 @@ export default function Step5Photos({ submission, onSaved, onContinue }: WizardS
   const [error, setError] = useState<string | null>(null);
   const [advancing, setAdvancing] = useState(false);
 
-  const capturedSlots = new Set(submission.photos.map((photo) => photo.slot));
+  const photoBySlot = new Map(submission.photos.map((photo) => [photo.slot, photo]));
   const capturedCount = submission.photos.length;
-  const nextSlot = PHOTO_SLOTS.find((slot) => !capturedSlots.has(slot.key));
+  const nextSlot = PHOTO_SLOTS.find((slot) => !photoBySlot.has(slot.key));
   const canReview = capturedCount >= MIN_REQUIRED_PHOTOS;
 
   function openPickerFor(slot: PhotoSlot) {
@@ -75,7 +75,6 @@ export default function Step5Photos({ submission, onSaved, onContinue }: WizardS
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="hidden"
         onChange={handleFileSelected}
       />
@@ -85,9 +84,9 @@ export default function Step5Photos({ submission, onSaved, onContinue }: WizardS
         {capturedCount} of {PHOTO_SLOTS.length} captured · compressed on device before upload
       </p>
 
-      <div className="mt-5 grid grid-cols-3 gap-3">
+      <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
         {PHOTO_SLOTS.map((slot) => {
-          const captured = capturedSlots.has(slot.key);
+          const photo = photoBySlot.get(slot.key);
           const isActive = uploading && activeSlot === slot.key;
           return (
             <button
@@ -95,19 +94,32 @@ export default function Step5Photos({ submission, onSaved, onContinue }: WizardS
               type="button"
               disabled={uploading}
               onClick={() => openPickerFor(slot.key)}
-              className={`relative flex aspect-square flex-col items-center justify-center gap-1 rounded-md border-[1.5px] p-2 text-center text-[11px] font-semibold transition disabled:cursor-not-allowed ${
-                captured
-                  ? 'border-navy-900 bg-navy-900 text-white'
-                  : 'border-dashed border-ink-300 bg-ink-50 text-ink-500 hover:border-blue-500'
+              className={`relative aspect-square w-full overflow-hidden rounded-md border-[1.5px] transition disabled:cursor-not-allowed ${
+                photo
+                  ? 'border-navy-900'
+                  : 'border-dashed border-ink-300 bg-ink-50 hover:border-blue-500'
               }`}
             >
-              {captured && (
-                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-success text-[10px] text-white">
-                  ✓
+              {photo ? (
+                <>
+                  <img
+                    src={photo.url}
+                    alt={slot.label}
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                  <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-success text-[10px] text-white shadow">
+                    ✓
+                  </span>
+                  <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-1.5 py-1 text-[10px] font-semibold leading-tight text-white">
+                    {slot.label}
+                  </span>
+                </>
+              ) : (
+                <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-1 text-center text-[11px] font-semibold leading-tight text-ink-500">
+                  <span>{isActive ? '…' : '+'}</span>
+                  <span>{slot.label}</span>
                 </span>
               )}
-              <span>{isActive ? '…' : captured ? '' : '+'}</span>
-              <span className="leading-tight">{slot.label}</span>
             </button>
           );
         })}
