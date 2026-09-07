@@ -11,7 +11,6 @@ export default function Step1Vin({ submission, onSaved, onContinue }: WizardStep
   const [vin, setVin] = useState(submission.vin ?? '');
   const [decoding, setDecoding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [scanMessage, setScanMessage] = useState(false);
 
   const trimmedVin = vin.trim().toUpperCase();
   const hasSeventeen = trimmedVin.length === 17;
@@ -74,19 +73,6 @@ export default function Step1Vin({ submission, onSaved, onContinue }: WizardStep
           {hasSeventeen && <> · checksum {checksumValid ? 'valid' : 'invalid'}</>}
         </p>
       </div>
-
-      <button
-        type="button"
-        onClick={() => setScanMessage(true)}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-md border-[1.5px] border-navy-900 bg-white py-2.5 text-sm font-semibold text-navy-900 hover:bg-ink-50"
-      >
-        📷 Scan barcode instead
-      </button>
-      {scanMessage && (
-        <p className="mt-2 text-xs text-ink-500">
-          Barcode scanning isn&rsquo;t available yet — enter the VIN manually.
-        </p>
-      )}
 
       {error && (
         <p role="alert" className="mt-4 text-sm font-medium text-danger">
