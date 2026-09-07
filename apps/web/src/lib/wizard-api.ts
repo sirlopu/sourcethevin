@@ -20,7 +20,7 @@ export interface SubmissionPhoto {
 export interface SubmissionRecord {
   _id: string;
   referenceId: string;
-  status: 'new' | 'submitted';
+  status: 'new' | 'submitted' | 'offer_sent' | 'accepted' | 'declined';
   currentStep: number;
   vin?: string;
   decoded?: {

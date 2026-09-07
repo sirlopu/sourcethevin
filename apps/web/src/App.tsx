@@ -4,11 +4,13 @@ import WizardShell from './components/wizard/WizardShell';
 import { AuthProvider, useAuth } from './lib/auth-context';
 import { roleHome } from './lib/role';
 import AdminUsers from './pages/AdminUsers';
+import AuditTrail from './pages/AuditTrail';
 import Dashboard from './pages/Dashboard';
 import DeskQueue from './pages/DeskQueue';
 import SubmissionDetail from './pages/desk/SubmissionDetail';
 import RequestSellerAccess from './pages/RequestSellerAccess';
 import SignIn from './pages/SignIn';
+import SubmissionView from './pages/SubmissionView';
 
 function RootRedirect() {
   const { user, initializing } = useAuth();
@@ -52,6 +54,22 @@ export default function App() {
           element={
             <ProtectedRoute roles={['trade_desk']}>
               <SubmissionDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/submissions/:id"
+          element={
+            <ProtectedRoute roles={['seller']}>
+              <SubmissionView />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/submissions/:id/audit"
+          element={
+            <ProtectedRoute roles={['trade_desk', 'admin']}>
+              <AuditTrail />
             </ProtectedRoute>
           }
         />

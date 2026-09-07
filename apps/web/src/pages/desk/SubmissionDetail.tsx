@@ -10,7 +10,9 @@ import {
   type EstimatedExpenses,
   type SubmissionListItem,
 } from '../../lib/desk-api';
+import { createOffer, getLatestOffer, type OfferRecord } from '../../lib/offers-api';
 import { formatRelativeAge } from '../../lib/relative-time';
+import { statusBadge } from '../../lib/submission-status';
 
 const EMPTY_EXPENSES: EstimatedExpenses = {
   transport: 0,
@@ -70,15 +72,30 @@ export default function SubmissionDetail() {
 
   return (
     <main className="mx-auto max-w-5xl p-8">
-      <Link to="/desk/queue" className="text-sm font-semibold text-blue-500 hover:underline">
-        ← Back to queue
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link to="/desk/queue" className="text-sm font-semibold text-blue-500 hover:underline">
+          ← Back to queue
+        </Link>
+        <Link
+          to={`/submissions/${id}/audit`}
+          className="text-sm font-semibold text-blue-500 hover:underline"
+        >
+          View audit trail →
+        </Link>
+      </div>
 
       <div className="mt-2 flex items-center gap-2">
         <p className="font-mono text-xs text-ink-500">{submission.referenceId}</p>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-semibold text-blue-600">
-          ● New
-        </span>
+        {(() => {
+          const badge = statusBadge(submission.status);
+          return (
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}
+            >
+              ● {badge.label}
+            </span>
+          );
+        })()}
       </div>
       <h1 className="font-display text-2xl font-bold text-navy-900">{vehicleHeading}</h1>
       <p className="text-sm text-ink-500">
@@ -158,14 +175,165 @@ export default function SubmissionDetail() {
         </div>
 
         {submission.valuation !== undefined && (
-          <ValuationWorkspacePanel
-            submissionId={id}
-            authFetch={authFetch}
-            initial={submission.valuation}
-          />
+          <div className="space-y-6">
+            <ValuationWorkspacePanel
+              submissionId={id}
+              authFetch={authFetch}
+              initial={submission.valuation}
+            />
+            <OfferPanel
+              submissionId={id}
+              authFetch={authFetch}
+              submissionStatus={submission.status}
+            />
+          </div>
         )}
       </div>
     </main>
+  );
+}
+
+function OfferPanel({
+  submissionId,
+  authFetch,
+  submissionStatus,
+}: {
+  submissionId: string;
+  authFetch: ReturnType<typeof useAuth>['authFetch'];
+  submissionStatus: string;
+}) {
+  const [latestOffer, setLatestOffer] = useState<OfferRecord | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
+  const [terms, setTerms] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getLatestOffer(authFetch, submissionId)
+      .then((offer) => {
+        if (!cancelled) setLatestOffer(offer);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [authFetch, submissionId]);
+
+  const resolved = submissionStatus === 'accepted' || submissionStatus === 'declined';
+
+  async function handleSend() {
+    setError(null);
+    const parsedAmount = Number(amount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      setError('Enter a valid offer amount.');
+      return;
+    }
+    if (!expiresAt) {
+      setError('Set an expiration date/time.');
+      return;
+    }
+    setSending(true);
+    try {
+      const offer = await createOffer(authFetch, submissionId, {
+        amount: parsedAmount,
+        expiresAt: new Date(expiresAt).toISOString(),
+        terms: terms || undefined,
+      });
+      setLatestOffer(offer);
+      setAmount('');
+      setExpiresAt('');
+      setTerms('');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Unable to send the offer.');
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="rounded-md border border-ink-200 bg-white p-5">
+      <p className="font-display text-sm font-bold text-navy-900">Offer</p>
+
+      {loaded && latestOffer && (
+        <div className="mt-3 rounded-md bg-ink-50 p-3 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-ink-900">
+              v{latestOffer.version} · ${latestOffer.amount.toLocaleString()}
+            </span>
+            <span className="text-xs font-semibold uppercase text-ink-500">
+              {latestOffer.status}
+            </span>
+          </div>
+          {latestOffer.createdByRole === 'seller' && latestOffer.status === 'pending' && (
+            <p className="mt-1 text-xs font-semibold text-warning">
+              Seller countered{latestOffer.notes ? `: "${latestOffer.notes}"` : ''}
+            </p>
+          )}
+          <p className="mt-1 text-xs text-ink-500">
+            Expires {new Date(latestOffer.expiresAt).toLocaleString()}
+          </p>
+        </div>
+      )}
+      {loaded && !latestOffer && <p className="mt-2 text-sm text-ink-500">No offer sent yet.</p>}
+
+      {!resolved && (
+        <div className="mt-4 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+            {latestOffer ? 'Send a new offer' : 'New purchase offer'}
+          </p>
+          <label className="block">
+            <span className="text-xs text-ink-500">Offer amount</span>
+            <input
+              type="number"
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+              className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs text-ink-500">Expires</span>
+            <input
+              type="datetime-local"
+              value={expiresAt}
+              onChange={(event) => setExpiresAt(event.target.value)}
+              className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs text-ink-500">
+              Terms / notes (optional, visible to seller)
+            </span>
+            <textarea
+              rows={2}
+              value={terms}
+              onChange={(event) => setTerms(event.target.value)}
+              className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
+            />
+          </label>
+          {error && (
+            <p role="alert" className="text-sm font-medium text-danger">
+              {error}
+            </p>
+          )}
+          <button
+            type="button"
+            disabled={sending}
+            onClick={() => {
+              void handleSend();
+            }}
+            className="w-full rounded-md bg-success py-2 text-sm font-semibold text-white hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {sending ? 'Sending…' : 'Send offer to seller'}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

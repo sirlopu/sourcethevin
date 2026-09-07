@@ -5,6 +5,7 @@ import { ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth-context';
 import { listSubmissions, type SubmissionListItem } from '../lib/desk-api';
 import { formatRelativeAge } from '../lib/relative-time';
+import { statusBadge } from '../lib/submission-status';
 
 const DATE_RANGE_OPTIONS = [
   { value: '1', label: 'Last 24 hours' },
@@ -29,7 +30,7 @@ function sellerLabel(item: SubmissionListItem): string {
 export default function DeskQueue() {
   const { authFetch } = useAuth();
   const [items, setItems] = useState<SubmissionListItem[]>([]);
-  const [total, setTotal] = useState(0);
+  const [newCount, setNewCount] = useState(0);
   const [search, setSearch] = useState('');
   const [dateRangeDays, setDateRangeDays] = useState<string>('7');
   const [loading, setLoading] = useState(true);
@@ -40,11 +41,14 @@ export default function DeskQueue() {
     const dateFrom = dateRangeDays
       ? new Date(Date.now() - Number(dateRangeDays) * 24 * 60 * 60 * 1000).toISOString()
       : undefined;
-    listSubmissions(authFetch, { status: 'submitted', dateFrom, limit: 50 })
-      .then((response) => {
+    Promise.all([
+      listSubmissions(authFetch, { dateFrom, limit: 50 }),
+      listSubmissions(authFetch, { status: 'submitted', limit: 1 }),
+    ])
+      .then(([response, newResponse]) => {
         if (cancelled) return;
         setItems(response.items);
-        setTotal(response.total);
+        setNewCount(newResponse.total);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -80,7 +84,7 @@ export default function DeskQueue() {
     <RoleShell title="Submission queue">
       <div className="mb-4 flex items-center gap-2">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-600">
-          ● {total} new
+          ● {newCount} new
         </span>
       </div>
 
@@ -156,7 +160,7 @@ export default function DeskQueue() {
                       {formatRelativeAge(item.submittedAt ?? item.createdAt)}
                     </td>
                     <td className="px-4 py-3">
-                      <StatusBadge />
+                      <StatusBadge status={item.status} />
                     </td>
                   </tr>
                 ))}
@@ -179,7 +183,7 @@ export default function DeskQueue() {
                       {item.referenceId} · …{(item.vin ?? '').slice(-6)}
                     </p>
                   </div>
-                  <StatusBadge />
+                  <StatusBadge status={item.status} />
                 </div>
                 <div className="mt-2 text-sm text-ink-700">
                   {item.vehicle.mileage?.toLocaleString() ?? '—'} mi
@@ -197,10 +201,13 @@ export default function DeskQueue() {
   );
 }
 
-function StatusBadge() {
+function StatusBadge({ status }: { status: string }) {
+  const badge = statusBadge(status);
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-600">
-      ● New
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${badge.className}`}
+    >
+      ● {badge.label}
     </span>
   );
 }

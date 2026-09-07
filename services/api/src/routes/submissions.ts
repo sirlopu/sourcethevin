@@ -2,12 +2,14 @@ import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import {
   MIN_REQUIRED_PHOTOS,
+  offerCreateInputSchema,
   photoSlotSchema,
   submissionPatchSchema,
   valuationInputSchema,
   valuationOverrideInputSchema,
 } from '@sourcethevin/shared';
 import { computeRecommendedMaxAcquisition, formatCurrency } from '../lib/valuation';
+import { buildOfferSentDetail } from '../lib/offers';
 import {
   buildSubmissionPhotoPublicId,
   createSignedUpload,
@@ -17,10 +19,21 @@ import { requireAuth } from '../middleware/requireAuth';
 import { requireRole } from '../middleware/requireRole';
 import { AuditLog } from '../models/AuditLog';
 import { nextSubmissionReferenceId } from '../models/Counter';
+import { Offer } from '../models/Offer';
 import { Submission } from '../models/Submission';
 import { User } from '../models/User';
 import { ValuationWorkspace } from '../models/ValuationWorkspace';
 import { listSubmissionsQuerySchema } from '../validation/submissions';
+
+/** Audit actions visible to a seller viewing their own submission's history — never the
+ * internal valuation-strategy actions (limit_overridden etc.) that trade_desk/admin see. */
+const SELLER_VISIBLE_AUDIT_ACTIONS = new Set([
+  'submitted',
+  'offer_sent',
+  'offer_accepted',
+  'offer_declined',
+  'offer_countered',
+]);
 
 export const submissionsRouter = Router();
 submissionsRouter.use(requireAuth);
@@ -131,6 +144,10 @@ submissionsRouter.get(
     }
     if (status) {
       filter.status = status;
+    } else if (req.user!.role !== 'seller') {
+      // No explicit status filter: show the full queue across every post-submission status
+      // (submitted, offer_sent, accepted, declined) but never a seller's in-progress draft.
+      filter.status = { $ne: 'new' };
     }
     if (dateFrom || dateTo) {
       const createdAt: Record<string, Date> = {};
@@ -431,5 +448,124 @@ submissionsRouter.post(
     });
 
     res.status(200).json(valuation);
+  },
+);
+
+// ── Offers ───────────────────────────────────────────────────────────────────────────────
+
+submissionsRouter.post(
+  '/:id/offers',
+  requireRole('trade_desk'),
+  async (req: Request, res: Response) => {
+    const submission = await loadTenantSubmission(paramId(req), req.user!.tenantId);
+    if (!submission) {
+      res.status(404).json({ error: 'Submission not found' });
+      return;
+    }
+    if (submission.status === 'new') {
+      res.status(409).json({ error: 'This submission has not been submitted yet' });
+      return;
+    }
+    if (submission.status === 'accepted' || submission.status === 'declined') {
+      res.status(409).json({ error: 'This trade has already been resolved' });
+      return;
+    }
+
+    const parsed = offerCreateInputSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+    const { amount, expiresAt, terms } = parsed.data;
+
+    // At most one pending offer per submission — a new offer supersedes any prior one,
+    // whether it was sent by trade_desk or is an unanswered seller counter.
+    await Offer.updateMany(
+      { submissionId: submission._id, status: 'pending' },
+      { status: 'superseded' },
+    );
+
+    const version = (await Offer.countDocuments({ submissionId: submission._id })) + 1;
+    const offer = await Offer.create({
+      submissionId: submission._id,
+      tenantId: submission.tenantId,
+      version,
+      amount,
+      expiresAt: new Date(expiresAt),
+      terms: terms ?? '',
+      status: 'pending',
+      createdByRole: 'trade_desk',
+      createdBy: req.user!.id,
+    });
+
+    submission.status = 'offer_sent';
+    await submission.save();
+
+    await AuditLog.create({
+      tenantId: submission.tenantId,
+      submissionId: submission._id,
+      actorId: req.user!.id,
+      action: 'offer_sent',
+      detail: buildOfferSentDetail(offer),
+    });
+
+    res.status(201).json(offer);
+  },
+);
+
+submissionsRouter.get(
+  '/:id/offers/latest',
+  requireRole('seller', 'trade_desk', 'admin'),
+  async (req: Request, res: Response) => {
+    const submission = await loadViewableSubmission(paramId(req), req.user!);
+    if (!submission) {
+      res.status(404).json({ error: 'Submission not found' });
+      return;
+    }
+    const offer = await Offer.findOne({ submissionId: submission._id }).sort({ version: -1 });
+    if (!offer) {
+      res.status(404).json({ error: 'No offer has been made yet' });
+      return;
+    }
+    res.status(200).json(offer);
+  },
+);
+
+// ── Audit trail ──────────────────────────────────────────────────────────────────────────
+// trade_desk/admin see every action; a seller sees only the seller-relevant subset (never
+// internal valuation-strategy actions like limit_overridden).
+
+submissionsRouter.get(
+  '/:id/audit',
+  requireRole('seller', 'trade_desk', 'admin'),
+  async (req: Request, res: Response) => {
+    const submission = await loadViewableSubmission(paramId(req), req.user!);
+    if (!submission) {
+      res.status(404).json({ error: 'Submission not found' });
+      return;
+    }
+
+    const query: Record<string, unknown> = { submissionId: submission._id };
+    if (req.user!.role === 'seller') {
+      query.action = { $in: [...SELLER_VISIBLE_AUDIT_ACTIONS] };
+    }
+
+    const entries = await AuditLog.find(query).sort({ createdAt: -1 });
+    const actorIds = [...new Set(entries.map((entry) => entry.actorId.toString()))];
+    const actors = await User.find({ _id: { $in: actorIds } }).select('email role');
+    const actorById = new Map(actors.map((actor) => [actor._id.toString(), actor]));
+
+    const results = entries.map((entry) => {
+      const actor = actorById.get(entry.actorId.toString());
+      return {
+        _id: entry._id,
+        action: entry.action,
+        detail: entry.detail,
+        createdAt: entry.createdAt,
+        actor: actor ? { email: actor.email, role: actor.role } : null,
+      };
+    });
+
+    res.status(200).json(results);
   },
 );
