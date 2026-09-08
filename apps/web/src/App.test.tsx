@@ -82,4 +82,36 @@ describe('App', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Invalid email or password');
   });
+
+  it('shows and hides the login password', async () => {
+    const user = userEvent.setup();
+    renderApp('/login');
+
+    const passwordInput = await screen.findByLabelText('Password');
+    expect(passwordInput).toHaveAttribute('type', 'password');
+
+    await user.click(screen.getByRole('button', { name: 'Show password' }));
+    expect(passwordInput).toHaveAttribute('type', 'text');
+    expect(screen.getByRole('button', { name: 'Hide password' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Hide password' }));
+    expect(passwordInput).toHaveAttribute('type', 'password');
+  });
+
+  it('shows and hides the requested seller password', async () => {
+    const user = userEvent.setup();
+    renderApp('/request-access');
+
+    const passwordInput = await screen.findByLabelText('Password');
+    expect(passwordInput).toHaveAttribute('type', 'password');
+
+    await user.click(screen.getByRole('button', { name: 'Show password' }));
+    expect(passwordInput).toHaveAttribute('type', 'text');
+
+    await user.click(screen.getByRole('button', { name: 'Hide password' }));
+    expect(passwordInput).toHaveAttribute('type', 'password');
+  });
 });

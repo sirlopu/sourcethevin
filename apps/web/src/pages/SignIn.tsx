@@ -45,6 +45,7 @@ export default function SignIn() {
           label="Password"
           name="password"
           type="password"
+          showPasswordToggle
           autoComplete="current-password"
           required
           value={password}

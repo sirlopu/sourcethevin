@@ -69,6 +69,7 @@ export default function RequestSellerAccess() {
           label="Password"
           name="password"
           type="password"
+          showPasswordToggle
           autoComplete="new-password"
           minLength={10}
           required
