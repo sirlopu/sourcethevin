@@ -2,6 +2,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { type Request, type Response } from 'express';
 import { vehicleSchema } from '@sourcethevin/shared';
+import { adminRouter } from './routes/admin';
 import { authRouter } from './routes/auth';
 import { offersRouter } from './routes/offers';
 import { submissionsRouter } from './routes/submissions';
@@ -35,6 +36,7 @@ export function createApp() {
   app.use('/vin', vinRouter);
   app.use('/submissions', submissionsRouter);
   app.use('/offers', offersRouter);
+  app.use('/admin', adminRouter);
 
   return app;
 }

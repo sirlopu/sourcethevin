@@ -67,7 +67,7 @@ describe('App', () => {
     await user.type(screen.getByLabelText('Password'), 'correct-password');
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
-    expect(await screen.findByRole('heading', { name: 'Users' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Users & roles' })).toBeInTheDocument();
   });
 
   it('shows the login error message when credentials are rejected', async () => {

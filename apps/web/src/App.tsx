@@ -3,6 +3,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import WizardShell from './components/wizard/WizardShell';
 import { AuthProvider, useAuth } from './lib/auth-context';
 import { roleHome } from './lib/role';
+import AdminUserEdit from './pages/AdminUserEdit';
 import AdminUsers from './pages/AdminUsers';
 import AuditTrail from './pages/AuditTrail';
 import Dashboard from './pages/Dashboard';
@@ -78,6 +79,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={['admin']}>
               <AdminUsers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users/:id"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <AdminUserEdit />
             </ProtectedRoute>
           }
         />
