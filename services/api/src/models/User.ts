@@ -8,8 +8,10 @@ export type UserStatus = (typeof USER_STATUSES)[number];
 
 const dealershipSchema = new Schema(
   {
-    name: { type: String, required: true, trim: true },
-    licenseNumber: { type: String, required: true, trim: true },
+    // Admin invitations may create seller accounts before dealership details are known.
+    // Self-registration still requires these fields at the request-validation layer.
+    name: { type: String, trim: true },
+    licenseNumber: { type: String, trim: true },
     phone: { type: String, required: true, trim: true },
   },
   { _id: false },

@@ -1,14 +1,19 @@
 import { z } from 'zod';
 import { USER_ROLES } from '../models/User';
 
+const optionalTrimmedString = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().trim().min(1).optional(),
+);
+
 export const inviteUserSchema = z
   .object({
     email: z.string().trim().toLowerCase().email(),
     role: z.enum(USER_ROLES),
     dealership: z
       .object({
-        name: z.string().trim().min(1),
-        licenseNumber: z.string().trim().min(1),
+        name: optionalTrimmedString,
+        licenseNumber: optionalTrimmedString,
         phone: z.string().trim().min(1),
       })
       .optional(),
