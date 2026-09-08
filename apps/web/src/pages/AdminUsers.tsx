@@ -278,7 +278,14 @@ function InviteUserForm({
       const result = await inviteUser(authFetch, {
         email,
         role,
-        dealership: role === 'seller' ? { name: dealershipName, licenseNumber, phone } : undefined,
+        dealership:
+          role === 'seller'
+            ? {
+                ...(dealershipName.trim() ? { name: dealershipName } : {}),
+                ...(licenseNumber.trim() ? { licenseNumber } : {}),
+                phone,
+              }
+            : undefined,
       });
       onInvited(result.user.email, result.temporaryPassword);
     } catch (err) {
@@ -322,18 +329,16 @@ function InviteUserForm({
       {role === 'seller' && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <label className="block">
-            <span className="text-xs font-semibold text-ink-700">Dealership name</span>
+            <span className="text-xs font-semibold text-ink-700">Dealership name (optional)</span>
             <input
-              required
               value={dealershipName}
               onChange={(event) => setDealershipName(event.target.value)}
               className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
             />
           </label>
           <label className="block">
-            <span className="text-xs font-semibold text-ink-700">License #</span>
+            <span className="text-xs font-semibold text-ink-700">License # (optional)</span>
             <input
-              required
               value={licenseNumber}
               onChange={(event) => setLicenseNumber(event.target.value)}
               className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"

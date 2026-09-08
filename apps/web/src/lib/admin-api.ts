@@ -4,8 +4,8 @@ import { parseJson } from './http';
 import type { Role } from './role';
 
 export interface AdminDealership {
-  name: string;
-  licenseNumber: string;
+  name?: string;
+  licenseNumber?: string;
   phone: string;
 }
 
