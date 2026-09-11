@@ -188,6 +188,8 @@ Clients cannot submit the calculated result directly.
 
 See the development plan for additional hardening still planned, including security headers, expanded request validation, stronger upload checks, structured logging, and comprehensive audit coverage.
 
+See [SECURITY.md](SECURITY.md) for how secrets are inventoried, verified non-functional in committed files, and injected at runtime for local development and both production deploy targets.
+
 ## Testing
 
 The test suites use Vitest and cover core API and browser behavior, including password handling, token issuance, authorization middleware, VIN decoding, Cloudinary helpers, valuation math, shared schemas, and application routing.
