@@ -40,6 +40,7 @@ const userSchema = new Schema(
       required: true,
       default: 'pending',
     },
+    mustChangePassword: { type: Boolean, required: true, default: false },
     refreshTokenHash: { type: String, default: null, select: false },
     refreshTokenExpiresAt: { type: Date, default: null, select: false },
   },

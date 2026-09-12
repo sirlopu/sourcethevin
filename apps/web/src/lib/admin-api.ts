@@ -14,6 +14,7 @@ export interface AdminUserRecord {
   email: string;
   role: Role;
   status: 'pending' | 'active' | 'suspended';
+  mustChangePassword: boolean;
   dealership: AdminDealership | null;
   lastActiveAt: string;
   createdAt: string;
@@ -45,6 +46,12 @@ export interface InviteUserInput {
 export function inviteUser(authFetch: AuthFetch, input: InviteUserInput) {
   return parseJson<{ user: AdminUserRecord; temporaryPassword: string }>(
     authFetch('/admin/users', { method: 'POST', body: JSON.stringify(input) }),
+  );
+}
+
+export function resetUserPassword(authFetch: AuthFetch, id: string) {
+  return parseJson<{ user: AdminUserRecord; temporaryPassword: string }>(
+    authFetch(`/admin/users/${id}/reset-password`, { method: 'POST' }),
   );
 }
 

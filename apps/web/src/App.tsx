@@ -6,6 +6,7 @@ import { roleHome } from './lib/role';
 import AdminUserEdit from './pages/AdminUserEdit';
 import AdminUsers from './pages/AdminUsers';
 import AuditTrail from './pages/AuditTrail';
+import ChangePassword from './pages/ChangePassword';
 import Dashboard from './pages/Dashboard';
 import DeskQueue from './pages/DeskQueue';
 import SubmissionDetail from './pages/desk/SubmissionDetail';
@@ -16,7 +17,10 @@ import SubmissionView from './pages/SubmissionView';
 function RootRedirect() {
   const { user, initializing } = useAuth();
   if (initializing) return null;
-  return <Navigate to={user ? roleHome(user.role) : '/login'} replace />;
+  if (!user) return <Navigate to="/login" replace />;
+  return (
+    <Navigate to={user.mustChangePassword ? '/change-password' : roleHome(user.role)} replace />
+  );
 }
 
 export default function App() {
@@ -26,6 +30,14 @@ export default function App() {
         <Route path="/" element={<RootRedirect />} />
         <Route path="/login" element={<SignIn />} />
         <Route path="/request-access" element={<RequestSellerAccess />} />
+        <Route
+          path="/change-password"
+          element={
+            <ProtectedRoute roles={['seller', 'trade_desk', 'admin']} skipPasswordGate>
+              <ChangePassword />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/dashboard"
           element={

@@ -7,6 +7,7 @@ export interface AuthUser {
   email: string;
   role: Role;
   tenantId: string;
+  mustChangePassword: boolean;
 }
 
 export type AuthFetch = (path: string, init?: RequestInit) => Promise<Response>;
@@ -17,6 +18,8 @@ interface AuthContextValue {
   initializing: boolean;
   signIn: (email: string, password: string) => Promise<AuthUser>;
   signOut: () => Promise<void>;
+  /** Re-run the silent refresh to pull a fresh access token (e.g. after changing password). */
+  refreshSession: () => Promise<void>;
   /** fetch() against the API, attaching the access token and retrying once after a silent refresh on 401. */
   authFetch: AuthFetch;
 }
@@ -31,8 +34,15 @@ function decodeAccessTokenUser(token: string): AuthUser | null {
       sub: string;
       role: Role;
       tenantId: string;
+      mustChangePassword: boolean;
     };
-    return { id: claims.sub, email: '', role: claims.role, tenantId: claims.tenantId };
+    return {
+      id: claims.sub,
+      email: '',
+      role: claims.role,
+      tenantId: claims.tenantId,
+      mustChangePassword: claims.mustChangePassword,
+    };
   } catch {
     return null;
   }
@@ -68,6 +78,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(result.accessToken);
     setUser(result.user);
     return result.user;
+  }, []);
+
+  const refreshSession = useCallback(async () => {
+    const { accessToken: token } = await api.refresh();
+    setAccessToken(token);
+    setUser(decodeAccessTokenUser(token));
   }, []);
 
   const signOut = useCallback(async () => {
@@ -109,7 +125,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, initializing, signIn, signOut, authFetch }}>
+    <AuthContext.Provider
+      value={{ user, accessToken, initializing, signIn, signOut, refreshSession, authFetch }}
+    >
       {children}
     </AuthContext.Provider>
   );

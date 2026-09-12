@@ -35,7 +35,7 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export interface LoginResult {
   accessToken: string;
-  user: { id: string; email: string; role: Role; tenantId: string };
+  user: { id: string; email: string; role: Role; tenantId: string; mustChangePassword: boolean };
 }
 
 export function login(email: string, password: string): Promise<LoginResult> {

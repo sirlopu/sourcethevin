@@ -32,3 +32,10 @@ services:
       # Origin of the deployed web app, allowed to call this API with credentials (CORS).
       - key: WEB_ORIGIN
         sync: false
+      # Cloudinary account used to sign direct-from-browser photo uploads. Set in the Render dashboard.
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false

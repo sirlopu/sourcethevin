@@ -41,7 +41,13 @@ describe('App', () => {
   it('signs a seller in and routes them to the dashboard', async () => {
     vi.mocked(api.login).mockResolvedValue({
       accessToken: 'fake.token.value',
-      user: { id: 'u1', email: 'seller@example.com', role: 'seller', tenantId: 't1' },
+      user: {
+        id: 'u1',
+        email: 'seller@example.com',
+        role: 'seller',
+        tenantId: 't1',
+        mustChangePassword: false,
+      },
     });
     const user = userEvent.setup();
     renderApp('/login');
@@ -57,7 +63,13 @@ describe('App', () => {
   it('routes an admin to /admin/users and a trade desk user to /desk/queue', async () => {
     vi.mocked(api.login).mockResolvedValue({
       accessToken: 'fake.token.value',
-      user: { id: 'u2', email: 'admin@example.com', role: 'admin', tenantId: 't1' },
+      user: {
+        id: 'u2',
+        email: 'admin@example.com',
+        role: 'admin',
+        tenantId: 't1',
+        mustChangePassword: false,
+      },
     });
     const user = userEvent.setup();
     renderApp('/login');
@@ -68,6 +80,29 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
     expect(await screen.findByRole('heading', { name: 'Users & roles' })).toBeInTheDocument();
+  });
+
+  it('forces a user with a temporary password to the change-password screen instead of their home page', async () => {
+    vi.mocked(api.login).mockResolvedValue({
+      accessToken: 'fake.token.value',
+      user: {
+        id: 'u3',
+        email: 'seller@example.com',
+        role: 'seller',
+        tenantId: 't1',
+        mustChangePassword: true,
+      },
+    });
+    const user = userEvent.setup();
+    renderApp('/login');
+
+    await screen.findByText('Source the VIN.');
+    await user.type(screen.getByLabelText('Email'), 'seller@example.com');
+    await user.type(screen.getByLabelText('Password'), 'temp-password');
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+
+    expect(await screen.findByLabelText('Temporary password')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Seller dashboard' })).not.toBeInTheDocument();
   });
 
   it('shows the login error message when credentials are rejected', async () => {

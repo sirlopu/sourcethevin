@@ -46,7 +46,12 @@ describe('requireAuth', () => {
   });
 
   it('rejects when the user no longer exists in the database', async () => {
-    const token = signAccessToken({ sub: 'user-1', role: 'seller', tenantId: 'tenant-1' });
+    const token = signAccessToken({
+      sub: 'user-1',
+      role: 'seller',
+      tenantId: 'tenant-1',
+      mustChangePassword: false,
+    });
     vi.mocked(User.findById).mockResolvedValue(null);
     const req = { headers: { authorization: `Bearer ${token}` } } as Request;
     const res = createMockRes();
@@ -61,7 +66,12 @@ describe('requireAuth', () => {
   it.each(['pending', 'suspended'] as const)(
     'rejects a %s user even with a valid, unexpired access token',
     async (status) => {
-      const token = signAccessToken({ sub: 'user-1', role: 'seller', tenantId: 'tenant-1' });
+      const token = signAccessToken({
+        sub: 'user-1',
+        role: 'seller',
+        tenantId: 'tenant-1',
+        mustChangePassword: false,
+      });
       vi.mocked(User.findById).mockResolvedValue({
         _id: { toString: () => 'user-1' },
         email: 'seller@example.com',
@@ -81,7 +91,12 @@ describe('requireAuth', () => {
   );
 
   it('re-checks the database rather than trusting the JWT, and attaches req.user for an active account', async () => {
-    const token = signAccessToken({ sub: 'user-1', role: 'seller', tenantId: 'tenant-1' });
+    const token = signAccessToken({
+      sub: 'user-1',
+      role: 'seller',
+      tenantId: 'tenant-1',
+      mustChangePassword: false,
+    });
     vi.mocked(User.findById).mockResolvedValue({
       _id: { toString: () => 'user-1' },
       email: 'seller@example.com',
