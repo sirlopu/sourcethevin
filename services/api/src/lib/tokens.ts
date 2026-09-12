@@ -6,6 +6,7 @@ export interface AccessTokenClaims {
   sub: string;
   role: UserRole;
   tenantId: string;
+  mustChangePassword: boolean;
 }
 
 const ACCESS_TOKEN_TTL = '15m';

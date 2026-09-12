@@ -21,7 +21,9 @@ export default function SignIn() {
     setSubmitting(true);
     try {
       const user = await signIn(email, password);
-      navigate(roleHome(user.role), { replace: true });
+      navigate(user.mustChangePassword ? '/change-password' : roleHome(user.role), {
+        replace: true,
+      });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
     } finally {

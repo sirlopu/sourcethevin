@@ -12,15 +12,26 @@ beforeEach(() => {
 
 describe('signAccessToken / verifyAccessToken', () => {
   it('round-trips the claims', () => {
-    const token = signAccessToken({ sub: 'user-1', role: 'seller', tenantId: 'tenant-1' });
+    const token = signAccessToken({
+      sub: 'user-1',
+      role: 'seller',
+      tenantId: 'tenant-1',
+      mustChangePassword: false,
+    });
     const claims = verifyAccessToken(token);
     expect(claims.sub).toBe('user-1');
     expect(claims.role).toBe('seller');
     expect(claims.tenantId).toBe('tenant-1');
+    expect(claims.mustChangePassword).toBe(false);
   });
 
   it('issues a short-lived token with an expiry claim', () => {
-    const token = signAccessToken({ sub: 'user-1', role: 'admin', tenantId: 'tenant-1' });
+    const token = signAccessToken({
+      sub: 'user-1',
+      role: 'admin',
+      tenantId: 'tenant-1',
+      mustChangePassword: false,
+    });
     const payloadSegment = token.split('.')[1];
     if (!payloadSegment) {
       throw new Error('Token is missing a payload segment');
@@ -31,16 +42,26 @@ describe('signAccessToken / verifyAccessToken', () => {
   });
 
   it('rejects a token signed with a different secret', () => {
-    const token = signAccessToken({ sub: 'user-1', role: 'seller', tenantId: 'tenant-1' });
+    const token = signAccessToken({
+      sub: 'user-1',
+      role: 'seller',
+      tenantId: 'tenant-1',
+      mustChangePassword: false,
+    });
     process.env.JWT_ACCESS_SECRET = 'a-different-secret';
     expect(() => verifyAccessToken(token)).toThrow();
   });
 
   it('throws when JWT_ACCESS_SECRET is not set', () => {
     delete process.env.JWT_ACCESS_SECRET;
-    expect(() => signAccessToken({ sub: 'user-1', role: 'seller', tenantId: 'tenant-1' })).toThrow(
-      'JWT_ACCESS_SECRET is not set',
-    );
+    expect(() =>
+      signAccessToken({
+        sub: 'user-1',
+        role: 'seller',
+        tenantId: 'tenant-1',
+        mustChangePassword: false,
+      }),
+    ).toThrow('JWT_ACCESS_SECRET is not set');
   });
 });
 

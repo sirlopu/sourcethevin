@@ -24,6 +24,7 @@ function serializeUser(user: UserDocument) {
     email: user.email,
     role: user.role,
     status: user.status,
+    mustChangePassword: user.mustChangePassword,
     dealership: user.dealership
       ? {
           name: user.dealership.name,
@@ -85,6 +86,7 @@ adminRouter.post('/users', async (req: Request, res: Response) => {
     passwordHash,
     role,
     status: 'active',
+    mustChangePassword: true,
     tenantId: req.user!.tenantId,
     ...(role === 'seller' ? { dealership } : {}),
   });
@@ -138,6 +140,26 @@ adminRouter.patch('/users/:id/status', async (req: Request, res: Response) => {
   user.status = parsed.data.status;
   await user.save();
   res.status(200).json(serializeUser(user));
+});
+
+adminRouter.post('/users/:id/reset-password', async (req: Request, res: Response) => {
+  const id = paramId(req);
+  const user = await User.findOne({ _id: id, tenantId: req.user!.tenantId }).catch(() => null);
+  if (!user) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  const temporaryPassword = randomBytes(18).toString('base64url');
+  user.passwordHash = await hashPassword(temporaryPassword);
+  user.mustChangePassword = true;
+  // Invalidate the existing session so the refresh-token cookie can't silently mint a
+  // fresh access token that bypasses the forced password change.
+  user.refreshTokenHash = null;
+  user.refreshTokenExpiresAt = null;
+  await user.save();
+
+  res.status(200).json({ user: serializeUser(user), temporaryPassword });
 });
 
 async function loadPendingSellerRequest(id: string, tenantId: string) {

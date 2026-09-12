@@ -7,6 +7,7 @@ import {
   inviteUser,
   listAdminUsers,
   rejectSellerRequest,
+  resetUserPassword,
   type AdminUserRecord,
   type AdminUsersResponse,
 } from '../lib/admin-api';
@@ -94,7 +95,7 @@ export default function AdminUsers() {
 
       {temporaryPassword && (
         <div className="mt-4 rounded-md border border-warning bg-warning-bg p-4 text-sm text-ink-900">
-          <p className="font-semibold">Account created for {temporaryPassword.email}</p>
+          <p className="font-semibold">New temporary password for {temporaryPassword.email}</p>
           <p className="mt-1">
             Share this temporary password out of band —{' '}
             <span className="font-mono font-semibold">{temporaryPassword.password}</span>. It
@@ -160,12 +161,22 @@ export default function AdminUsers() {
                       {formatRelativeAge(item.lastActiveAt)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Link
-                        to={`/admin/users/${item.id}`}
-                        className="text-sm font-semibold text-blue-500 hover:underline"
-                      >
-                        Edit
-                      </Link>
+                      <div className="flex items-center justify-end gap-3">
+                        <ResetPasswordButton
+                          user={item}
+                          authFetch={authFetch}
+                          onReset={(email, password) => {
+                            setTemporaryPassword({ email, password });
+                            void refresh();
+                          }}
+                        />
+                        <Link
+                          to={`/admin/users/${item.id}`}
+                          className="text-sm font-semibold text-blue-500 hover:underline"
+                        >
+                          Edit
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -249,6 +260,48 @@ function PendingRequestBanner({
           Reject
         </button>
       </div>
+    </div>
+  );
+}
+
+function ResetPasswordButton({
+  user,
+  authFetch,
+  onReset,
+}: {
+  user: AdminUserRecord;
+  authFetch: ReturnType<typeof useAuth>['authFetch'];
+  onReset: (email: string, password: string) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleReset() {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await resetUserPassword(authFetch, user.id);
+      onReset(result.user.email, result.temporaryPassword);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Unable to reset this password.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="text-right">
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => {
+          void handleReset();
+        }}
+        className="text-sm font-semibold text-blue-500 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Reset password
+      </button>
+      {error && <p className="mt-1 text-xs font-medium text-danger">{error}</p>}
     </div>
   );
 }

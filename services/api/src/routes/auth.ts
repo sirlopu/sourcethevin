@@ -1,10 +1,11 @@
 import { Router, type Request, type Response } from 'express';
 import { authRateLimiter } from '../middleware/rateLimit';
+import { requireAuth } from '../middleware/requireAuth';
 import { hashPassword, verifyPassword } from '../lib/password';
 import { DEFAULT_TENANT_ID } from '../lib/tenant';
 import { generateRefreshToken, hashRefreshToken, signAccessToken } from '../lib/tokens';
 import { User } from '../models/User';
-import { loginSchema, registerSellerRequestSchema } from '../validation/auth';
+import { changePasswordSchema, loginSchema, registerSellerRequestSchema } from '../validation/auth';
 
 const REFRESH_COOKIE_NAME = 'refreshToken';
 const REFRESH_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -79,6 +80,7 @@ authRouter.post('/login', async (req: Request, res: Response) => {
     sub: user._id.toString(),
     role: user.role,
     tenantId: user.tenantId.toString(),
+    mustChangePassword: user.mustChangePassword,
   });
 
   const { token: refreshToken, hash, expiresAt } = generateRefreshToken();
@@ -94,8 +96,30 @@ authRouter.post('/login', async (req: Request, res: Response) => {
       email: user.email,
       role: user.role,
       tenantId: user.tenantId.toString(),
+      mustChangePassword: user.mustChangePassword,
     },
   });
+});
+
+authRouter.patch('/password', requireAuth, async (req: Request, res: Response) => {
+  const parsed = changePasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const { currentPassword, newPassword } = parsed.data;
+
+  const user = await User.findById(req.user!.id).select('+passwordHash');
+  if (!user || !(await verifyPassword(user.passwordHash, currentPassword))) {
+    res.status(401).json({ error: 'Current password is incorrect' });
+    return;
+  }
+
+  user.passwordHash = await hashPassword(newPassword);
+  user.mustChangePassword = false;
+  await user.save();
+
+  res.status(200).json({ ok: true });
 });
 
 authRouter.post('/refresh', async (req: Request, res: Response) => {
@@ -124,6 +148,7 @@ authRouter.post('/refresh', async (req: Request, res: Response) => {
     sub: user._id.toString(),
     role: user.role,
     tenantId: user.tenantId.toString(),
+    mustChangePassword: user.mustChangePassword,
   });
 
   const { token: nextRefreshToken, hash: nextHash, expiresAt } = generateRefreshToken();
