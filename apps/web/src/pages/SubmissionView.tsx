@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import MessageThread from '../components/MessageThread';
 import { ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth-context';
 import {
@@ -113,6 +114,10 @@ export default function SubmissionView() {
         {submission.status !== 'accepted' && submission.status !== 'declined' && !offer && (
           <WaitingCard message="Your trade-in is under review." />
         )}
+
+        <div className="mt-6">
+          <MessageThread submissionId={id} currentUserRole="seller" />
+        </div>
       </div>
     </div>
   );

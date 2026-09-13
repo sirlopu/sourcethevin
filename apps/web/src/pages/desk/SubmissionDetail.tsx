@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import MessageThread from '../../components/MessageThread';
 import { ApiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
 import {
@@ -188,6 +189,10 @@ export default function SubmissionDetail() {
             />
           </div>
         )}
+      </div>
+
+      <div className="mt-6">
+        <MessageThread submissionId={id} currentUserRole="trade_desk" />
       </div>
     </main>
   );
