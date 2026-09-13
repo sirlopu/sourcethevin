@@ -4,6 +4,7 @@ import MessageThread from '../../components/MessageThread';
 import { ApiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
 import {
+  declineSubmission,
   getSubmissionDetail,
   overrideValuation,
   saveValuation,
@@ -192,6 +193,9 @@ export default function SubmissionDetail() {
               submissionId={id}
               authFetch={authFetch}
               submissionStatus={submission.status}
+              onStatusChange={(status) =>
+                setSubmission((prev) => (prev ? { ...prev, status } : prev))
+              }
             />
           </div>
         )}
@@ -214,10 +218,12 @@ function OfferPanel({
   submissionId,
   authFetch,
   submissionStatus,
+  onStatusChange,
 }: {
   submissionId: string;
   authFetch: ReturnType<typeof useAuth>['authFetch'];
   submissionStatus: string;
+  onStatusChange: (status: SubmissionListItem['status']) => void;
 }) {
   const [latestOffer, setLatestOffer] = useState<OfferRecord | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -252,6 +258,7 @@ function OfferPanel({
     try {
       const offer = await acceptOffer(authFetch, latestOffer._id);
       setLatestOffer(offer);
+      onStatusChange('accepted');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to accept the offer.');
     } finally {
@@ -266,8 +273,25 @@ function OfferPanel({
     try {
       const offer = await declineOffer(authFetch, latestOffer._id);
       setLatestOffer(offer);
+      onStatusChange('submitted');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to decline the offer.');
+    } finally {
+      setResponding(false);
+    }
+  }
+
+  async function handleEndNegotiation() {
+    if (!window.confirm('End this trade? No further offers or counters will be possible.')) {
+      return;
+    }
+    setResponding(true);
+    setError(null);
+    try {
+      const updated = await declineSubmission(authFetch, submissionId);
+      onStatusChange(updated.status);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Unable to end this trade.');
     } finally {
       setResponding(false);
     }
@@ -400,6 +424,16 @@ function OfferPanel({
             className="w-full rounded-md bg-success py-2 text-sm font-semibold text-white hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {sending ? 'Sending…' : 'Send offer to seller'}
+          </button>
+          <button
+            type="button"
+            disabled={responding}
+            onClick={() => {
+              void handleEndNegotiation();
+            }}
+            className="w-full text-center text-xs font-semibold text-danger underline decoration-dotted hover:text-danger disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            End negotiation
           </button>
         </div>
       )}

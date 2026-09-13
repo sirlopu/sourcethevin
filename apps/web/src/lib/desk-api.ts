@@ -102,3 +102,9 @@ export function overrideValuation(
     }),
   );
 }
+
+export function declineSubmission(authFetch: AuthFetch, submissionId: string) {
+  return parseJson<SubmissionListItem>(
+    authFetch(`/submissions/${submissionId}/decline`, { method: 'POST' }),
+  );
+}

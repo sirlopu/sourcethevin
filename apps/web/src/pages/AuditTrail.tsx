@@ -13,6 +13,7 @@ const ACTION_BADGES: Record<string, string> = {
   offer_countered: 'bg-warning-bg text-warning',
   offer_accepted: 'bg-success-bg text-success',
   offer_declined: 'bg-danger-bg text-danger',
+  submission_declined: 'bg-danger-bg text-danger',
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -22,6 +23,7 @@ const ACTION_LABELS: Record<string, string> = {
   offer_countered: 'Offer countered',
   offer_accepted: 'Offer accepted',
   offer_declined: 'Offer declined',
+  submission_declined: 'Trade ended',
 };
 
 function actionLabel(action: string): string {

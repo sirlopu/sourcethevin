@@ -541,6 +541,41 @@ submissionsRouter.post(
   },
 );
 
+submissionsRouter.post(
+  '/:id/decline',
+  requireRole('trade_desk'),
+  async (req: Request, res: Response) => {
+    const submission = await loadTenantSubmission(paramId(req), req.user!.tenantId);
+    if (!submission) {
+      res.status(404).json({ error: 'Submission not found' });
+      return;
+    }
+    if (submission.status === 'accepted' || submission.status === 'declined') {
+      res.status(409).json({ error: 'This trade has already been resolved' });
+      return;
+    }
+
+    // Close out any live offer so it can't later be accepted/declined once the trade is closed.
+    await Offer.updateMany(
+      { submissionId: submission._id, status: 'pending' },
+      { status: 'declined', respondedAt: new Date(), respondedBy: req.user!.id },
+    );
+
+    submission.status = 'declined';
+    await submission.save();
+
+    await AuditLog.create({
+      tenantId: submission.tenantId,
+      submissionId: submission._id,
+      actorId: req.user!.id,
+      action: 'submission_declined',
+      detail: 'Trade desk ended the trade',
+    });
+
+    res.status(200).json(submission);
+  },
+);
+
 submissionsRouter.get(
   '/:id/offers/latest',
   requireRole('seller', 'trade_desk', 'admin'),

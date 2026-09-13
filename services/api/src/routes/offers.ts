@@ -104,7 +104,9 @@ offersRouter.post('/:id/decline', async (req: Request, res: Response) => {
   offer.respondedBy = new Types.ObjectId(req.user!.id);
   await offer.save();
 
-  submission.status = 'declined';
+  // A seller declining ends the trade; a trade_desk user declining a seller's counter
+  // just rejects that amount and reopens the trade for further negotiation.
+  submission.status = req.user!.role === 'seller' ? 'declined' : 'submitted';
   await submission.save();
 
   await AuditLog.create({
