@@ -134,10 +134,10 @@ function WaitingCard({ message }: { message: string }) {
 function DeclinedCard({ submission }: { submission: SubmissionRecord }) {
   return (
     <div className="rounded-xl bg-white p-8 text-center shadow-[0_12px_32px_rgba(10,31,82,.14)]">
-      <p className="font-display text-xl font-bold text-navy-900">Offer declined</p>
+      <p className="font-display text-xl font-bold text-navy-900">Trade declined</p>
       <p className="mt-2 text-sm text-ink-500">
-        You declined the offer for {vehicleLabel(submission)}. You can start a new trade-in any
-        time.
+        This trade for {vehicleLabel(submission)} has been declined. You can start a new trade-in
+        any time.
       </p>
       <Link
         to="/dashboard"
