@@ -11,7 +11,13 @@ import {
   type EstimatedExpenses,
   type SubmissionListItem,
 } from '../../lib/desk-api';
-import { createOffer, getLatestOffer, type OfferRecord } from '../../lib/offers-api';
+import {
+  acceptOffer,
+  createOffer,
+  declineOffer,
+  getLatestOffer,
+  type OfferRecord,
+} from '../../lib/offers-api';
 import { formatRelativeAge } from '../../lib/relative-time';
 import { statusBadge } from '../../lib/submission-status';
 
@@ -198,6 +204,12 @@ export default function SubmissionDetail() {
   );
 }
 
+function defaultExpiryLocal(): string {
+  const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function OfferPanel({
   submissionId,
   authFetch,
@@ -210,9 +222,10 @@ function OfferPanel({
   const [latestOffer, setLatestOffer] = useState<OfferRecord | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [amount, setAmount] = useState('');
-  const [expiresAt, setExpiresAt] = useState('');
+  const [expiresAt, setExpiresAt] = useState(defaultExpiryLocal());
   const [terms, setTerms] = useState('');
   const [sending, setSending] = useState(false);
+  const [responding, setResponding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -231,6 +244,34 @@ function OfferPanel({
   }, [authFetch, submissionId]);
 
   const resolved = submissionStatus === 'accepted' || submissionStatus === 'declined';
+
+  async function handleAcceptCounter() {
+    if (!latestOffer) return;
+    setResponding(true);
+    setError(null);
+    try {
+      const offer = await acceptOffer(authFetch, latestOffer._id);
+      setLatestOffer(offer);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Unable to accept the offer.');
+    } finally {
+      setResponding(false);
+    }
+  }
+
+  async function handleDeclineCounter() {
+    if (!latestOffer) return;
+    setResponding(true);
+    setError(null);
+    try {
+      const offer = await declineOffer(authFetch, latestOffer._id);
+      setLatestOffer(offer);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Unable to decline the offer.');
+    } finally {
+      setResponding(false);
+    }
+  }
 
   async function handleSend() {
     setError(null);
@@ -252,7 +293,7 @@ function OfferPanel({
       });
       setLatestOffer(offer);
       setAmount('');
-      setExpiresAt('');
+      setExpiresAt(defaultExpiryLocal());
       setTerms('');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to send the offer.');
@@ -276,9 +317,33 @@ function OfferPanel({
             </span>
           </div>
           {latestOffer.createdByRole === 'seller' && latestOffer.status === 'pending' && (
-            <p className="mt-1 text-xs font-semibold text-warning">
-              Seller countered{latestOffer.notes ? `: "${latestOffer.notes}"` : ''}
-            </p>
+            <>
+              <p className="mt-1 text-xs font-semibold text-warning">
+                Seller countered{latestOffer.notes ? `: "${latestOffer.notes}"` : ''}
+              </p>
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  disabled={responding}
+                  onClick={() => {
+                    void handleAcceptCounter();
+                  }}
+                  className="flex-1 rounded-md bg-success py-2 text-sm font-display font-semibold text-white hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Accept counter
+                </button>
+                <button
+                  type="button"
+                  disabled={responding}
+                  onClick={() => {
+                    void handleDeclineCounter();
+                  }}
+                  className="flex-1 rounded-md border-[1.5px] border-red-300 py-2 text-sm font-display font-semibold text-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Decline
+                </button>
+              </div>
+            </>
           )}
           <p className="mt-1 text-xs text-ink-500">
             Expires {new Date(latestOffer.expiresAt).toLocaleString()}

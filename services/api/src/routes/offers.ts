@@ -6,14 +6,14 @@ import {
   buildOfferCounteredDetail,
   buildOfferDeclinedDetail,
 } from '../lib/offers';
-import { requireAuth } from '../middleware/requireAuth';
+import { requireAuth, type AuthenticatedUser } from '../middleware/requireAuth';
 import { requireRole } from '../middleware/requireRole';
 import { AuditLog } from '../models/AuditLog';
 import { Offer } from '../models/Offer';
 import { Submission } from '../models/Submission';
 
 export const offersRouter = Router();
-offersRouter.use(requireAuth, requireRole('seller'));
+offersRouter.use(requireAuth, requireRole('seller', 'trade_desk'));
 
 function paramId(req: Request): string {
   const { id } = req.params;
@@ -24,15 +24,23 @@ type LoadResult =
   | { error: 'not_found' | 'not_pending' | 'expired' }
   | { offer: InstanceType<typeof Offer>; submission: InstanceType<typeof Submission> };
 
-/** An offer is only actionable by the seller who owns its submission, while still pending
- * and unexpired — this is the single gate shared by accept/decline/counter. */
-async function loadOwnPendingOffer(id: string, sellerId: string): Promise<LoadResult> {
+/** An offer is only actionable by the seller who owns its submission, or by a trade_desk
+ * user in the same tenant, while still pending and unexpired — this is the single gate
+ * shared by accept/decline/counter. */
+async function loadActionableOffer(id: string, user: AuthenticatedUser): Promise<LoadResult> {
   const offer = await Offer.findById(id).catch(() => null);
   if (!offer) {
     return { error: 'not_found' };
   }
   const submission = await Submission.findById(offer.submissionId).catch(() => null);
-  if (!submission || submission.sellerId.toString() !== sellerId) {
+  if (!submission) {
+    return { error: 'not_found' };
+  }
+  const authorized =
+    user.role === 'seller'
+      ? submission.sellerId.toString() === user.id
+      : submission.tenantId.toString() === user.tenantId;
+  if (!authorized) {
     return { error: 'not_found' };
   }
   if (offer.status !== 'pending') {
@@ -57,7 +65,7 @@ function respondToLoadError(res: Response, error: 'not_found' | 'not_pending' | 
 }
 
 offersRouter.post('/:id/accept', async (req: Request, res: Response) => {
-  const result = await loadOwnPendingOffer(paramId(req), req.user!.id);
+  const result = await loadActionableOffer(paramId(req), req.user!);
   if ('error' in result) {
     respondToLoadError(res, result.error);
     return;
@@ -84,7 +92,7 @@ offersRouter.post('/:id/accept', async (req: Request, res: Response) => {
 });
 
 offersRouter.post('/:id/decline', async (req: Request, res: Response) => {
-  const result = await loadOwnPendingOffer(paramId(req), req.user!.id);
+  const result = await loadActionableOffer(paramId(req), req.user!);
   if ('error' in result) {
     respondToLoadError(res, result.error);
     return;
@@ -110,8 +118,8 @@ offersRouter.post('/:id/decline', async (req: Request, res: Response) => {
   res.status(200).json(offer);
 });
 
-offersRouter.post('/:id/counter', async (req: Request, res: Response) => {
-  const result = await loadOwnPendingOffer(paramId(req), req.user!.id);
+offersRouter.post('/:id/counter', requireRole('seller'), async (req: Request, res: Response) => {
+  const result = await loadActionableOffer(paramId(req), req.user!);
   if ('error' in result) {
     respondToLoadError(res, result.error);
     return;
