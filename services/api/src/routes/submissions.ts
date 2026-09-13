@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import {
   MIN_REQUIRED_PHOTOS,
+  messageCreateInputSchema,
   offerCreateInputSchema,
   photoSlotSchema,
   submissionCreateSchema,
@@ -20,6 +21,7 @@ import { requireAuth } from '../middleware/requireAuth';
 import { requireRole } from '../middleware/requireRole';
 import { AuditLog } from '../models/AuditLog';
 import { nextSubmissionReferenceId } from '../models/Counter';
+import { Message } from '../models/Message';
 import { Offer } from '../models/Offer';
 import { Submission } from '../models/Submission';
 import { User } from '../models/User';
@@ -593,5 +595,71 @@ submissionsRouter.get(
     });
 
     res.status(200).json(results);
+  },
+);
+
+// ── Messages ─────────────────────────────────────────────────────────────────────────────
+// Per-submission message thread between the seller and trade_desk staff in the submission's
+// tenant. History persists and is scoped strictly to this submission — trade_desk access is
+// tenant-wide (no per-submission assignment), matching loadViewableSubmission elsewhere.
+
+submissionsRouter.get(
+  '/:id/messages',
+  requireRole('seller', 'trade_desk', 'admin'),
+  async (req: Request, res: Response) => {
+    const submission = await loadViewableSubmission(paramId(req), req.user!);
+    if (!submission) {
+      res.status(404).json({ error: 'Submission not found' });
+      return;
+    }
+
+    const entries = await Message.find({ submissionId: submission._id }).sort({ createdAt: 1 });
+    const authorIds = [...new Set(entries.map((entry) => entry.authorId.toString()))];
+    const authors = await User.find({ _id: { $in: authorIds } }).select('email role');
+    const authorById = new Map(authors.map((author) => [author._id.toString(), author]));
+
+    const results = entries.map((entry) => {
+      const author = authorById.get(entry.authorId.toString());
+      return {
+        _id: entry._id,
+        body: entry.body,
+        createdAt: entry.createdAt,
+        author: author ? { email: author.email, role: author.role } : null,
+      };
+    });
+
+    res.status(200).json(results);
+  },
+);
+
+submissionsRouter.post(
+  '/:id/messages',
+  requireRole('seller', 'trade_desk'),
+  async (req: Request, res: Response) => {
+    const submission = await loadViewableSubmission(paramId(req), req.user!);
+    if (!submission) {
+      res.status(404).json({ error: 'Submission not found' });
+      return;
+    }
+
+    const parsed = messageCreateInputSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid message', details: parsed.error.flatten() });
+      return;
+    }
+
+    const message = await Message.create({
+      tenantId: submission.tenantId,
+      submissionId: submission._id,
+      authorId: req.user!.id,
+      body: parsed.data.body,
+    });
+
+    res.status(201).json({
+      _id: message._id,
+      body: message.body,
+      createdAt: message.createdAt,
+      author: { email: req.user!.email, role: req.user!.role },
+    });
   },
 );
