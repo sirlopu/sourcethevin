@@ -145,6 +145,29 @@ function DeclinedCard({ submission }: { submission: SubmissionRecord }) {
       >
         Back to dashboard
       </Link>
+      <VehicleDetailsCard submission={submission} />
+    </div>
+  );
+}
+
+function VehicleDetailsCard({ submission }: { submission: SubmissionRecord }) {
+  return (
+    <div className="mt-6 rounded-md border border-ink-200 p-5 text-left">
+      <p className="font-display text-sm font-bold text-navy-900">Vehicle details</p>
+      <div className="mt-3 space-y-1">
+        <Row label="VIN" value={submission.vin ?? '—'} />
+        <Row label="Vehicle" value={vehicleLabel(submission)} />
+        <Row label="Mileage" value={submission.vehicle.mileage?.toLocaleString() ?? '—'} />
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between border-b border-dashed border-ink-200 py-1.5 text-sm last:border-b-0">
+      <span className="text-ink-500">{label}</span>
+      <span className="font-semibold text-ink-900">{value}</span>
     </div>
   );
 }
@@ -360,6 +383,8 @@ function AcceptedTimeline({
       <p className="mt-4 rounded-md bg-ink-50 p-3 text-left text-xs text-ink-500">
         Next: we&rsquo;ll contact you to arrange drop-off and payoff.
       </p>
+
+      <VehicleDetailsCard submission={submission} />
     </div>
   );
 }
