@@ -3,11 +3,19 @@ import { NotificationBell } from './NotificationBell';
 import { useAuth } from '../lib/auth-context';
 import logoColor from '../assets/logo-color-full.png';
 
-export function RoleShell({ title, children }: { title: string; children: ReactNode }) {
+export function RoleShell({
+  title,
+  children,
+  fullWidth = false,
+}: {
+  title: string;
+  children: ReactNode;
+  fullWidth?: boolean;
+}) {
   const { signOut } = useAuth();
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
+    <main className={`mx-auto p-8 ${fullWidth ? 'w-full' : 'max-w-3xl'}`}>
       <img src={logoColor} alt="SourceTheVIN" className="mb-6 h-12 w-auto" />
       <div className="flex items-center justify-between border-b border-ink-200 pb-4">
         <h1 className="font-display text-2xl font-bold text-navy-900">{title}</h1>

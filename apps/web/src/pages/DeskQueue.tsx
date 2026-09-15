@@ -81,7 +81,7 @@ export default function DeskQueue() {
   }, [items, search]);
 
   return (
-    <RoleShell title="Submission queue">
+    <RoleShell title="Submission queue" fullWidth>
       <div className="mb-4 flex items-center gap-2">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-600">
           ● {newCount} new
@@ -124,7 +124,7 @@ export default function DeskQueue() {
         <>
           {/* Table — desktop */}
           <div className="hidden overflow-x-auto rounded-md border border-ink-200 md:block">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-[1000px] text-left text-sm">
               <thead className="bg-ink-50 text-xs font-semibold uppercase tracking-wide text-ink-500">
                 <tr>
                   <th className="px-4 py-3">ID</th>
@@ -138,7 +138,7 @@ export default function DeskQueue() {
               <tbody>
                 {filteredItems.map((item) => (
                   <tr key={item._id} className="border-t border-ink-200 hover:bg-ink-50">
-                    <td className="px-4 py-3">
+                    <td className="whitespace-nowrap px-4 py-3">
                       <Link
                         to={`/desk/submissions/${item._id}`}
                         className="font-mono text-xs font-semibold text-blue-600 hover:underline"
@@ -146,17 +146,19 @@ export default function DeskQueue() {
                         {item.referenceId}
                       </Link>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="min-w-[240px] px-4 py-3">
                       <p className="font-semibold text-ink-900">{vehicleLabel(item)}</p>
                       <p className="font-mono text-xs text-ink-500">
                         …{(item.vin ?? '').slice(-6)}
                       </p>
                     </td>
-                    <td className="px-4 py-3 text-ink-700">
+                    <td className="whitespace-nowrap px-4 py-3 text-ink-700">
                       {item.vehicle.mileage?.toLocaleString() ?? '—'}
                     </td>
-                    <td className="px-4 py-3 text-ink-700">{sellerLabel(item)}</td>
-                    <td className="px-4 py-3 text-ink-500">
+                    <td className="px-4 py-3 text-ink-700 [overflow-wrap:anywhere]">
+                      {sellerLabel(item)}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-ink-500">
                       {formatRelativeAge(item.submittedAt ?? item.createdAt)}
                     </td>
                     <td className="px-4 py-3">
@@ -205,7 +207,7 @@ function StatusBadge({ status }: { status: string }) {
   const badge = statusBadge(status);
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${badge.className}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${badge.className}`}
     >
       ● {badge.label}
     </span>
