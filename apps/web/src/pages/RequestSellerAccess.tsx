@@ -77,14 +77,14 @@ export default function RequestSellerAccess() {
           onChange={(event) => setPassword(event.target.value)}
         />
         <Field
-          label="Dealership name"
+          label="Dealership name (optional)"
           name="dealershipName"
           required
           value={dealershipName}
           onChange={(event) => setDealershipName(event.target.value)}
         />
         <Field
-          label="Dealer license number"
+          label="Dealer license number (optional)"
           name="licenseNumber"
           required
           value={licenseNumber}
