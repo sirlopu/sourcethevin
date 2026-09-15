@@ -21,6 +21,8 @@ import {
 } from '../../lib/offers-api';
 import { formatRelativeAge } from '../../lib/relative-time';
 import { statusBadge } from '../../lib/submission-status';
+import { photoSlotLabel } from '@sourcethevin/shared';
+import type { SubmissionPhoto } from '../../lib/wizard-api';
 
 const EMPTY_EXPENSES: EstimatedExpenses = {
   transport: 0,
@@ -34,6 +36,16 @@ export default function SubmissionDetail() {
   const { authFetch } = useAuth();
   const [submission, setSubmission] = useState<SubmissionListItem | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [enlargedPhoto, setEnlargedPhoto] = useState<SubmissionPhoto | null>(null);
+
+  useEffect(() => {
+    if (!enlargedPhoto) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setEnlargedPhoto(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [enlargedPhoto]);
 
   useEffect(() => {
     if (!id) return;
@@ -118,9 +130,42 @@ export default function SubmissionDetail() {
               key={photo.slot}
               src={photo.url}
               alt={photo.slot}
-              className="h-20 w-20 flex-shrink-0 rounded-md border border-ink-200 object-cover"
+              role="button"
+              tabIndex={0}
+              onClick={() => setEnlargedPhoto(photo)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') setEnlargedPhoto(photo);
+              }}
+              className="h-20 w-20 flex-shrink-0 cursor-pointer rounded-md border border-ink-200 object-cover hover:opacity-80"
             />
           ))}
+        </div>
+      )}
+
+      {enlargedPhoto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-8"
+          onClick={() => setEnlargedPhoto(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setEnlargedPhoto(null)}
+            aria-label="Close"
+            className="absolute right-4 top-4 text-3xl font-bold text-white hover:text-ink-200"
+          >
+            ×
+          </button>
+          <figure className="flex max-h-full max-w-full flex-col items-center gap-2">
+            <img
+              src={enlargedPhoto.url}
+              alt={enlargedPhoto.slot}
+              onClick={(event) => event.stopPropagation()}
+              className="max-h-[90vh] max-w-[90vw] rounded-md object-contain"
+            />
+            <figcaption className="text-sm font-medium text-white">
+              {photoSlotLabel(enlargedPhoto.slot)}
+            </figcaption>
+          </figure>
         </div>
       )}
 
