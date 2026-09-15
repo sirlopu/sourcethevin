@@ -30,6 +30,9 @@ export function NotificationBell() {
   }, [authFetch]);
 
   useEffect(() => {
+    // setState here happens after an await inside refreshUnreadCount(), not synchronously in
+    // the effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refreshUnreadCount();
     const interval = setInterval(() => {
       void refreshUnreadCount();
@@ -81,7 +84,8 @@ export function NotificationBell() {
       await markAllNotificationsRead(authFetch);
       setUnreadCount(0);
       setNotifications(
-        (current) => current?.map((n) => ({ ...n, readAt: n.readAt ?? new Date().toISOString() })) ?? null,
+        (current) =>
+          current?.map((n) => ({ ...n, readAt: n.readAt ?? new Date().toISOString() })) ?? null,
       );
     } catch {
       // Leave state as-is; the user can retry.
@@ -136,9 +140,7 @@ export function NotificationBell() {
             )}
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {notifications === null && (
-              <p className="px-4 py-4 text-sm text-ink-500">Loading…</p>
-            )}
+            {notifications === null && <p className="px-4 py-4 text-sm text-ink-500">Loading…</p>}
             {notifications !== null && notifications.length === 0 && (
               <p className="px-4 py-4 text-sm text-ink-500">No notifications yet.</p>
             )}

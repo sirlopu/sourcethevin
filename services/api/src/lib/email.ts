@@ -18,10 +18,7 @@ function getClient(): Resend | null {
 
 /** Wraps plain body text in a minimal HTML shell shared by every notification email. */
 export function buildEmailHtml(title: string, bodyText: string): string {
-  const escaped = bodyText
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  const escaped = bodyText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return `<div style="font-family: sans-serif; font-size: 15px; color: #1a1a1a;">
   <h2 style="margin: 0 0 12px;">${title}</h2>
   <p style="margin: 0; white-space: pre-line;">${escaped}</p>

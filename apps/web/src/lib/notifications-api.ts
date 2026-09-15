@@ -29,9 +29,7 @@ export function getUnreadCount(authFetch: AuthFetch) {
 }
 
 export function markNotificationRead(authFetch: AuthFetch, id: string) {
-  return parseJson<NotificationRecord>(
-    authFetch(`/notifications/${id}/read`, { method: 'PATCH' }),
-  );
+  return parseJson<NotificationRecord>(authFetch(`/notifications/${id}/read`, { method: 'PATCH' }));
 }
 
 export async function markAllNotificationsRead(authFetch: AuthFetch): Promise<void> {

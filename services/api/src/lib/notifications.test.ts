@@ -17,7 +17,9 @@ import { sendEmail } from './email';
 import { getDeskRecipients, getSeller, notify } from './notifications';
 
 beforeEach(() => {
-  vi.mocked(Notification.insertMany).mockReset().mockResolvedValue([] as never);
+  vi.mocked(Notification.insertMany)
+    .mockReset()
+    .mockResolvedValue([] as never);
   vi.mocked(sendEmail).mockClear();
   vi.mocked(User.find).mockReset();
   vi.mocked(User.findById).mockReset();

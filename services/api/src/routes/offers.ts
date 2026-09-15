@@ -67,7 +67,9 @@ async function counterpartyRecipients(
 }
 
 function counterpartyLink(actor: AuthenticatedUser, submissionId: string): string {
-  return actor.role === 'seller' ? `/desk/submissions/${submissionId}` : `/submissions/${submissionId}`;
+  return actor.role === 'seller'
+    ? `/desk/submissions/${submissionId}`
+    : `/submissions/${submissionId}`;
 }
 
 function respondToLoadError(res: Response, error: 'not_found' | 'not_pending' | 'expired'): void {
