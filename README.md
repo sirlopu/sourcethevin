@@ -65,7 +65,7 @@ sourcethevin/
 
 ## Prerequisites
 
-- Node.js 22
+- Node.js 22.22.2+, 24.15.0+, or 26+ (Node.js 25 is unsupported)
 - npm
 - MongoDB, either local or hosted
 - A Cloudinary account for the photo step
@@ -141,6 +141,10 @@ Run these from the repository root:
 | `npm run build`        | Build all workspaces that define a build script |
 
 Use `npm run format` to apply Prettier formatting.
+
+Type checking uses TypeScript 7 through the `@typescript/native` npm alias. The
+`typescript` dependency aliases `@typescript/typescript6` for ESLint, which still
+requires the TypeScript 6 compiler API. Keep both aliases when updating tooling.
 
 ## API overview
 
