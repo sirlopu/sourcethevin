@@ -94,7 +94,7 @@ export default function DeskQueue() {
           placeholder="Search VIN, seller, vehicle..."
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          className="min-w-[220px] flex-1 rounded-md border-[1.5px] border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/15"
+          className="min-w-0 basis-full sm:basis-[220px] flex-1 rounded-md border-[1.5px] border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/15"
         />
         <select
           value={dateRangeDays}
@@ -123,8 +123,8 @@ export default function DeskQueue() {
       {!loading && filteredItems.length > 0 && (
         <>
           {/* Table — desktop */}
-          <div className="hidden overflow-x-auto rounded-md border border-ink-200 md:block">
-            <table className="w-full min-w-[1000px] text-left text-sm">
+          <div className="hidden overflow-x-auto rounded-md border border-ink-200 xl:block">
+            <table className="w-full text-left text-sm">
               <thead className="bg-ink-50 text-xs font-semibold uppercase tracking-wide text-ink-500">
                 <tr>
                   <th className="px-4 py-3">ID</th>
@@ -171,14 +171,14 @@ export default function DeskQueue() {
           </div>
 
           {/* Cards — small screens */}
-          <div className="space-y-3 md:hidden">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:hidden">
             {filteredItems.map((item) => (
               <Link
                 key={item._id}
                 to={`/desk/submissions/${item._id}`}
-                className="block rounded-md border border-ink-200 p-4 hover:border-blue-500"
+                className="block min-w-0 [overflow-wrap:anywhere] rounded-md border border-ink-200 p-4 hover:border-blue-500"
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="font-semibold text-ink-900">{vehicleLabel(item)}</p>
                     <p className="font-mono text-xs text-ink-500">
@@ -190,7 +190,7 @@ export default function DeskQueue() {
                 <div className="mt-2 text-sm text-ink-700">
                   {item.vehicle.mileage?.toLocaleString() ?? '—'} mi
                 </div>
-                <div className="mt-1 flex items-center justify-between text-xs text-ink-500">
+                <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs text-ink-500">
                   <span>{sellerLabel(item)}</span>
                   <span>{formatRelativeAge(item.submittedAt ?? item.createdAt)}</span>
                 </div>

@@ -53,10 +53,10 @@ export default function AdminUsers() {
   const pendingUsers = data?.items.filter((u) => u.status === 'pending') ?? [];
 
   return (
-    <main className="mx-auto max-w-5xl p-8">
-      <div className="flex items-center justify-between border-b border-ink-200 pb-4">
+    <main className="mx-auto w-full p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-ink-200 pb-4">
         <h1 className="font-display text-2xl font-bold text-navy-900">Users &amp; roles</h1>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <button
             type="button"
             onClick={() => setShowInvite((open) => !open)}
@@ -129,41 +129,52 @@ export default function AdminUsers() {
       {!data && !error && <p className="mt-6 text-sm text-ink-500">Loading…</p>}
 
       {data && (
-        <div className="mt-6 overflow-x-auto rounded-md border border-ink-200">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-ink-50 text-xs font-semibold uppercase tracking-wide text-ink-500">
+        <div className="mt-6 xl:overflow-x-auto xl:rounded-md xl:border xl:border-ink-200">
+          <table className="block w-full text-left text-sm xl:table">
+            <thead className="hidden bg-ink-50 text-xs font-semibold uppercase tracking-wide text-ink-500 xl:table-header-group">
               <tr>
                 <th className="px-4 py-3">User</th>
                 <th className="px-4 py-3">Org</th>
                 <th className="px-4 py-3">Role</th>
                 <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Last active</th>
+                <th className="whitespace-nowrap px-4 py-3">Last active</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody>
+            <tbody className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:table-row-group">
               {data.items.map((item) => {
                 const badge = userStatusBadge(item.status);
                 return (
-                  <tr key={item.id} className="border-t border-ink-200">
-                    <td className="px-4 py-3">
+                  <tr
+                    key={item.id}
+                    className="block min-w-0 rounded-md border border-ink-200 p-4 xl:table-row xl:rounded-none xl:border-0 xl:border-t xl:p-0"
+                  >
+                    <td className="block pb-3 [overflow-wrap:anywhere] xl:table-cell xl:px-4 xl:py-3">
                       <p className="font-semibold text-ink-900">{item.email}</p>
                       {item.id === currentUser?.id && <p className="text-xs text-ink-500">(you)</p>}
                     </td>
-                    <td className="px-4 py-3 text-ink-700">{item.dealership?.name ?? '—'}</td>
-                    <td className="px-4 py-3 text-ink-700">{roleLabel(item.role)}</td>
-                    <td className="px-4 py-3">
+                    <td className="block py-2 text-ink-700 [overflow-wrap:anywhere] xl:table-cell xl:px-4 xl:py-3">
+                      <span className="mb-1 block text-xs text-ink-500 xl:hidden">Org</span>
+                      {item.dealership?.name ?? '—'}
+                    </td>
+                    <td className="block py-2 text-ink-700 xl:table-cell xl:whitespace-nowrap xl:px-4 xl:py-3">
+                      <span className="mb-1 block text-xs text-ink-500 xl:hidden">Role</span>
+                      {roleLabel(item.role)}
+                    </td>
+                    <td className="block py-2 xl:table-cell xl:px-4 xl:py-3">
+                      <span className="mb-1 block text-xs text-ink-500 xl:hidden">Status</span>
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}
+                        className={`inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}
                       >
                         {badge.label}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-ink-500">
+                    <td className="block py-2 text-ink-500 xl:table-cell xl:whitespace-nowrap xl:px-4 xl:py-3">
+                      <span className="mb-1 block text-xs text-ink-500 xl:hidden">Last active</span>
                       {formatRelativeAge(item.lastActiveAt)}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-3">
+                    <td className="block pt-3 xl:table-cell xl:px-4 xl:py-3 xl:text-right">
+                      <div className="flex flex-wrap items-center gap-3 xl:justify-end">
                         <ResetPasswordButton
                           user={item}
                           authFetch={authFetch}
@@ -299,7 +310,7 @@ function ResetPasswordButton({
         onClick={() => {
           void handleReset();
         }}
-        className="text-sm font-semibold text-blue-500 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+        className="whitespace-nowrap text-sm font-semibold text-blue-500 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
       >
         Reset password
       </button>
