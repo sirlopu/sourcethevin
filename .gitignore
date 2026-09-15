@@ -98,3 +98,4 @@ server/.env.staging
 /playwright-report/
 /test-results/
 /.claude/
+services/api/src/scripts/test-email-send.ts
