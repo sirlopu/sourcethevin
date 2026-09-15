@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /request-access
+Disallow: /dashboard
+Disallow: /wizard
+Disallow: /desk
+Disallow: /admin
+Disallow: /change-password
+Disallow: /audit-trail
+
+Sitemap: https://sourcethevin.com/sitemap.xml

@@ -33,7 +33,7 @@ describe('App', () => {
   it('redirects an unauthenticated visitor to the sign-in screen', async () => {
     renderApp('/');
 
-    expect(await screen.findByText('Source the VIN.')).toBeInTheDocument();
+    expect(await screen.findByAltText('SourceTheVIN')).toBeInTheDocument();
     expect(screen.getByLabelText('Email')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
   });
@@ -52,7 +52,7 @@ describe('App', () => {
     const user = userEvent.setup();
     renderApp('/login');
 
-    await screen.findByText('Source the VIN.');
+    await screen.findByAltText('SourceTheVIN');
     await user.type(screen.getByLabelText('Email'), 'seller@example.com');
     await user.type(screen.getByLabelText('Password'), 'correct-password');
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
@@ -74,7 +74,7 @@ describe('App', () => {
     const user = userEvent.setup();
     renderApp('/login');
 
-    await screen.findByText('Source the VIN.');
+    await screen.findByAltText('SourceTheVIN');
     await user.type(screen.getByLabelText('Email'), 'admin@example.com');
     await user.type(screen.getByLabelText('Password'), 'correct-password');
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
@@ -96,7 +96,7 @@ describe('App', () => {
     const user = userEvent.setup();
     renderApp('/login');
 
-    await screen.findByText('Source the VIN.');
+    await screen.findByAltText('SourceTheVIN');
     await user.type(screen.getByLabelText('Email'), 'seller@example.com');
     await user.type(screen.getByLabelText('Password'), 'temp-password');
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
@@ -110,7 +110,7 @@ describe('App', () => {
     const user = userEvent.setup();
     renderApp('/login');
 
-    await screen.findByText('Source the VIN.');
+    await screen.findByAltText('SourceTheVIN');
     await user.type(screen.getByLabelText('Email'), 'seller@example.com');
     await user.type(screen.getByLabelText('Password'), 'wrong-password');
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
