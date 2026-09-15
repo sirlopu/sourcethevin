@@ -17,6 +17,7 @@ import {
   createSignedUpload,
   isValidCloudinaryUrl,
 } from '../lib/cloudinary';
+import { getDeskRecipients, getSeller, notify } from '../lib/notifications';
 import { requireAuth } from '../middleware/requireAuth';
 import { requireRole } from '../middleware/requireRole';
 import { AuditLog } from '../models/AuditLog';
@@ -357,6 +358,16 @@ submissionsRouter.post(
       detail: `${submission.photos.length} photos, VIN decoded via vPIC`,
     });
 
+    await notify({
+      tenantId: submission.tenantId,
+      submissionId: submission._id,
+      type: 'submission_submitted',
+      recipients: await getDeskRecipients(submission.tenantId),
+      title: 'New trade submitted',
+      body: `Submission ${submission.referenceId} was submitted and is ready for review.`,
+      link: `/desk/submissions/${submission._id}`,
+    });
+
     res.status(200).json(submission);
   },
 );
@@ -537,6 +548,17 @@ submissionsRouter.post(
       detail: buildOfferSentDetail(offer),
     });
 
+    const seller = await getSeller(submission);
+    await notify({
+      tenantId: submission.tenantId,
+      submissionId: submission._id,
+      type: 'offer_sent',
+      recipients: seller ? [seller] : [],
+      title: 'You have a new offer',
+      body: `A new offer of ${formatCurrency(offer.amount)} was sent for submission ${submission.referenceId}.`,
+      link: `/submissions/${submission._id}`,
+    });
+
     res.status(201).json(offer);
   },
 );
@@ -570,6 +592,17 @@ submissionsRouter.post(
       actorId: req.user!.id,
       action: 'submission_declined',
       detail: 'Trade desk ended the trade',
+    });
+
+    const seller = await getSeller(submission);
+    await notify({
+      tenantId: submission.tenantId,
+      submissionId: submission._id,
+      type: 'trade_declined',
+      recipients: seller ? [seller] : [],
+      title: 'Trade ended',
+      body: `Trade desk ended the trade for submission ${submission.referenceId}.`,
+      link: `/submissions/${submission._id}`,
     });
 
     res.status(200).json(submission);
@@ -688,6 +721,23 @@ submissionsRouter.post(
       submissionId: submission._id,
       authorId: req.user!.id,
       body: parsed.data.body,
+    });
+
+    const recipients =
+      req.user!.role === 'seller'
+        ? await getDeskRecipients(submission.tenantId)
+        : await getSeller(submission).then((seller) => (seller ? [seller] : []));
+    await notify({
+      tenantId: submission.tenantId,
+      submissionId: submission._id,
+      type: 'message_received',
+      recipients,
+      title: 'New message',
+      body: `New message on submission ${submission.referenceId}: "${message.body}"`,
+      link:
+        req.user!.role === 'seller'
+          ? `/desk/submissions/${submission._id}`
+          : `/submissions/${submission._id}`,
     });
 
     res.status(201).json({

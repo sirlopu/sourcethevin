@@ -4,6 +4,7 @@ import express, { type Request, type Response } from 'express';
 import { vehicleSchema } from '@sourcethevin/shared';
 import { adminRouter } from './routes/admin';
 import { authRouter } from './routes/auth';
+import { notificationsRouter } from './routes/notifications';
 import { offersRouter } from './routes/offers';
 import { submissionsRouter } from './routes/submissions';
 import { vinRouter } from './routes/vin';
@@ -37,6 +38,7 @@ export function createApp() {
   app.use('/submissions', submissionsRouter);
   app.use('/offers', offersRouter);
   app.use('/admin', adminRouter);
+  app.use('/notifications', notificationsRouter);
 
   return app;
 }

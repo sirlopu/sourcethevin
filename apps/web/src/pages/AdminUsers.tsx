@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { NotificationBell } from '../components/NotificationBell';
 import { ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth-context';
 import {
@@ -63,6 +64,7 @@ export default function AdminUsers() {
           >
             + Invite user
           </button>
+          <NotificationBell />
           <button
             type="button"
             onClick={() => {

@@ -6,6 +6,8 @@ import {
   buildOfferCounteredDetail,
   buildOfferDeclinedDetail,
 } from '../lib/offers';
+import { formatCurrency } from '../lib/valuation';
+import { getDeskRecipients, getSeller, notify } from '../lib/notifications';
 import { requireAuth, type AuthenticatedUser } from '../middleware/requireAuth';
 import { requireRole } from '../middleware/requireRole';
 import { AuditLog } from '../models/AuditLog';
@@ -52,6 +54,22 @@ async function loadActionableOffer(id: string, user: AuthenticatedUser): Promise
   return { offer, submission };
 }
 
+/** The party that did *not* just act on this offer — the one to notify. */
+async function counterpartyRecipients(
+  actor: AuthenticatedUser,
+  submission: InstanceType<typeof Submission>,
+) {
+  if (actor.role === 'seller') {
+    return getDeskRecipients(submission.tenantId);
+  }
+  const seller = await getSeller(submission);
+  return seller ? [seller] : [];
+}
+
+function counterpartyLink(actor: AuthenticatedUser, submissionId: string): string {
+  return actor.role === 'seller' ? `/desk/submissions/${submissionId}` : `/submissions/${submissionId}`;
+}
+
 function respondToLoadError(res: Response, error: 'not_found' | 'not_pending' | 'expired'): void {
   if (error === 'not_found') {
     res.status(404).json({ error: 'Offer not found' });
@@ -88,6 +106,16 @@ offersRouter.post('/:id/accept', async (req: Request, res: Response) => {
     detail: buildOfferAcceptedDetail(offer),
   });
 
+  await notify({
+    tenantId: submission.tenantId,
+    submissionId: submission._id,
+    type: 'offer_accepted',
+    recipients: await counterpartyRecipients(req.user!, submission),
+    title: 'Offer accepted',
+    body: `Offer v${offer.version} (${formatCurrency(offer.amount)}) on submission ${submission.referenceId} was accepted.`,
+    link: counterpartyLink(req.user!, submission._id.toString()),
+  });
+
   res.status(200).json(offer);
 });
 
@@ -115,6 +143,20 @@ offersRouter.post('/:id/decline', async (req: Request, res: Response) => {
     actorId: req.user!.id,
     action: 'offer_declined',
     detail: buildOfferDeclinedDetail(offer),
+  });
+
+  const declineBody =
+    submission.status === 'declined'
+      ? `Offer v${offer.version} on submission ${submission.referenceId} was declined and the trade has ended.`
+      : `Your offer v${offer.version} on submission ${submission.referenceId} was declined. The trade is reopened for further negotiation.`;
+  await notify({
+    tenantId: submission.tenantId,
+    submissionId: submission._id,
+    type: 'offer_declined',
+    recipients: await counterpartyRecipients(req.user!, submission),
+    title: 'Offer declined',
+    body: declineBody,
+    link: counterpartyLink(req.user!, submission._id.toString()),
   });
 
   res.status(200).json(offer);
@@ -163,6 +205,16 @@ offersRouter.post('/:id/counter', requireRole('seller'), async (req: Request, re
     actorId: req.user!.id,
     action: 'offer_countered',
     detail: buildOfferCounteredDetail(offer, counterOffer),
+  });
+
+  await notify({
+    tenantId: submission.tenantId,
+    submissionId: submission._id,
+    type: 'offer_countered',
+    recipients: await getDeskRecipients(submission.tenantId),
+    title: 'Seller countered the offer',
+    body: `Seller countered with ${formatCurrency(counterOffer.amount)} on submission ${submission.referenceId}.`,
+    link: `/desk/submissions/${submission._id}`,
   });
 
   res.status(201).json(counterOffer);
