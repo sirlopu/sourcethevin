@@ -1,0 +1,21 @@
+{
+  "name": "SourceTheVIN",
+  "short_name": "SourceTheVIN",
+  "description": "Got a trade? Source the VIN. The trade-in intake and appraisal platform connecting sellers to the trade desk.",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#0a1f52",
+  "background_color": "#0a1f52",
+  "display": "standalone",
+  "start_url": "/"
+}

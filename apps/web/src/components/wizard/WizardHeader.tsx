@@ -1,3 +1,5 @@
+import logoOnNavy from '../../assets/logo-on-navy-full.png';
+
 interface WizardHeaderProps {
   step: number;
   onExit?: () => void;
@@ -13,6 +15,7 @@ export function WizardHeader({
 }: WizardHeaderProps) {
   return (
     <div className="rounded-t-xl bg-gradient-to-br from-navy-700 to-navy-900 px-6 py-4">
+      <img src={logoOnNavy} alt="SourceTheVIN" className="mb-3 h-10 w-auto" />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {onBack && (
