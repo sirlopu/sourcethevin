@@ -8,8 +8,8 @@ services (MongoDB, JWT signing, Cloudinary) and the web app's API base URL.
 The principle below is the same one OWASP's Mobile Top 10 **M1: Improper
 Credential Usage** describes for app shells (never ship real secrets inside
 a committed build artifact); here it applies to this repo's committed
-config and manifest-equivalent files (`infra/render.yaml`,
-`infra/netlify.toml`, `.env.example`).
+config and manifest-equivalent files (`render.yaml`,
+`netlify.toml`, `.env.example`).
 
 ### Inventory
 
@@ -32,17 +32,17 @@ manifest, or blueprint file.
 
 ### Placeholder verification (M1 credential-storage check)
 
-Every value committed to `.env.example`, `infra/render.yaml`, and
-`infra/netlify.toml` was checked and confirmed non-functional:
+Every value committed to `.env.example`, `render.yaml`, and
+`netlify.toml` was checked and confirmed non-functional:
 
 - `services/api/.env.example` and `apps/web/.env.example` contain only
   obvious placeholders (`change-me-to-a-long-random-string`,
   `your-cloud-name`, `your-api-key`, `your-api-secret`) or local-only
   defaults (`localhost` URLs) — none resolve to a real external account.
-- `infra/render.yaml` declares every secret-bearing key with
+- `render.yaml` declares every secret-bearing key with
   `sync: false`, which tells Render the value must be entered manually in
   its dashboard and explicitly excludes it from the committed blueprint.
-- `infra/netlify.toml` contains no environment variables at all; build
+- `netlify.toml` contains no environment variables at all; build
   config is read from Netlify's own UI/CLI env store.
 - A full-history search of this repository (`git log --all -p`) for
   `.env` files, MongoDB Atlas-style `mongodb+srv://` URIs, populated
@@ -62,12 +62,12 @@ Real values are never hardcoded into a committed file. Instead:
   filenames are gitignored (see below) and `process.loadEnvFile('.env.local')`
   / Vite's built-in `.env.local` loading reads them at process start —
   nothing is ever committed.
-- **API in production (Render)**: `infra/render.yaml` is a blueprint, not
+- **API in production (Render)**: `render.yaml` is a blueprint, not
   a secret store. Every secret key is declared with `sync: false` so Render
   prompts for the real value once in its dashboard (or via `render env`)
   and injects it as a runtime environment variable; the blueprint itself
   never contains a real value.
-- **Web in production (Netlify)**: `infra/netlify.toml` defines only the
+- **Web in production (Netlify)**: `netlify.toml` defines only the
   build command and publish directory. `VITE_API_BASE_URL` is set as a
   build-time environment variable in the Netlify UI/CLI, which Vite bakes
   into the static bundle during `npm run build`. This value is the API's

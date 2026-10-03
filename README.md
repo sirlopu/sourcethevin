@@ -58,9 +58,8 @@ sourcethevin/
 │   └── api/              # Express, Mongoose, authentication, integrations
 ├── packages/
 │   └── shared/           # Shared TypeScript types and Zod schemas
-└── infra/
-    ├── netlify.toml      # Web build and SPA redirect configuration
-    └── render.yaml       # API service blueprint
+├── netlify.toml          # Web build and SPA redirect configuration
+└── render.yaml           # API service blueprint
 ```
 
 ## Prerequisites
@@ -212,11 +211,17 @@ npm run build
 
 ### API on Render
 
-`infra/render.yaml` installs the monorepo dependencies, starts the `services/api` workspace, and checks `GET /health`. Configure `MONGODB_URI`, `JWT_ACCESS_SECRET`, and `WEB_ORIGIN` in Render. Cloudinary variables are also required when photo uploads are enabled.
+`render.yaml` installs the monorepo dependencies, starts the `services/api` workspace, and checks `GET /health`. Configure `MONGODB_URI`, `JWT_ACCESS_SECRET`, `WEB_ORIGIN`, the Cloudinary variables, and the Resend variables in Render; the API refuses to start in production if any required value is missing. `COOKIE_SAMESITE` is `none` while the web app and API are on different sites (default `*.netlify.app` / `*.onrender.com` URLs) — switch it to `lax` once both share a parent domain.
+
+Create the first admin once the API is live (from a Render shell, or locally against the production `MONGODB_URI`); the account must change its password on first sign-in:
+
+```bash
+ADMIN_EMAIL=you@example.com ADMIN_PASSWORD='a-long-temporary-password' npm run create-admin --workspace services/api
+```
 
 ### Web on Netlify
 
-`infra/netlify.toml` builds `apps/web`, publishes `apps/web/dist`, and redirects all routes to `index.html` for client-side routing. Set `VITE_API_BASE_URL` to the deployed API origin in Netlify.
+`netlify.toml` builds `apps/web`, publishes `apps/web/dist`, and redirects all routes to `index.html` for client-side routing. Set `VITE_API_BASE_URL` to the deployed API origin in Netlify before the first build — it is baked into the bundle at build time.
 
 For production, use separate MongoDB databases and Cloudinary folder namespaces for development, staging, and production.
 

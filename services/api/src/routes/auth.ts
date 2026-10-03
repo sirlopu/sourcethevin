@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type CookieOptions, type Request, type Response } from 'express';
 import { authRateLimiter } from '../middleware/rateLimit';
 import { requireAuth } from '../middleware/requireAuth';
 import { hashPassword, verifyPassword } from '../lib/password';
@@ -11,18 +11,30 @@ import { changePasswordSchema, loginSchema, registerSellerRequestSchema } from '
 const REFRESH_COOKIE_NAME = 'refreshToken';
 const REFRESH_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
+/**
+ * SameSite=None is required while the web app and API live on different sites (e.g.
+ * *.netlify.app → *.onrender.com); browsers then demand Secure. Once both share a parent
+ * domain, COOKIE_SAMESITE=lax is the safer setting.
+ */
+function refreshCookieOptions(): CookieOptions {
+  const sameSite = process.env.COOKIE_SAMESITE === 'none' ? 'none' : 'lax';
+  return {
+    httpOnly: true,
+    secure: sameSite === 'none' || process.env.NODE_ENV === 'production',
+    sameSite,
+    path: '/auth',
+  };
+}
+
 function setRefreshCookie(res: Response, token: string): void {
   res.cookie(REFRESH_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    ...refreshCookieOptions(),
     maxAge: REFRESH_COOKIE_MAX_AGE_MS,
-    path: '/auth',
   });
 }
 
 function clearRefreshCookie(res: Response): void {
-  res.clearCookie(REFRESH_COOKIE_NAME, { path: '/auth' });
+  res.clearCookie(REFRESH_COOKIE_NAME, refreshCookieOptions());
 }
 
 export const authRouter = Router();

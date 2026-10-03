@@ -12,17 +12,18 @@ services:
     region: oregon
     branch: main
     rootDir: .
-    buildCommand: npm ci
+    # --include=dev: NODE_ENV=production would otherwise skip devDependencies, and the
+    # service runs TypeScript directly via tsx.
+    buildCommand: npm ci --include=dev
     startCommand: npm run start --workspace services/api
     healthCheckPath: /health
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
-        value: 22
+        value: 22.22.2
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 4000
+      # PORT is injected by Render; the server reads it automatically.
       # MongoDB connection string (Mongoose). Set in the Render dashboard.
       - key: MONGODB_URI
         sync: false
@@ -32,10 +33,21 @@ services:
       # Origin of the deployed web app, allowed to call this API with credentials (CORS).
       - key: WEB_ORIGIN
         sync: false
+      # "none" while the web app (*.netlify.app) and API (*.onrender.com) are on different
+      # sites, so the refresh cookie is sent cross-site. Switch to "lax" once both share a
+      # parent domain (e.g. app.sourcethevin.com + api.sourcethevin.com).
+      - key: COOKIE_SAMESITE
+        value: none
       # Cloudinary account used to sign direct-from-browser photo uploads. Set in the Render dashboard.
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
         sync: false
       - key: CLOUDINARY_API_SECRET
+        sync: false
+      # Resend account used to send notification emails. The from address must be on a
+      # domain verified in Resend. Set in the Render dashboard.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
         sync: false
