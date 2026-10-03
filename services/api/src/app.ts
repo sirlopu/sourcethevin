@@ -11,6 +11,13 @@ import { vinRouter } from './routes/vin';
 
 export function createApp() {
   const app = express();
+  // Render (and most PaaS hosts) sit behind one reverse proxy; trusting it lets
+  // express-rate-limit key on the real client IP instead of the proxy's.
+  const trustProxy =
+    process.env.TRUST_PROXY ?? (process.env.NODE_ENV === 'production' ? '1' : undefined);
+  if (trustProxy !== undefined) {
+    app.set('trust proxy', Number(trustProxy));
+  }
   app.use(
     cors({
       origin: process.env.WEB_ORIGIN ?? 'http://localhost:5173',

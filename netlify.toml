@@ -1,0 +1,18 @@
+# Netlify config for the apps/web Vite SPA.
+# https://docs.netlify.com/configure-builds/file-based-configuration/
+#
+# Build-time config is read from environment variables set in the Netlify UI / CLI —
+# no secrets are committed here. VITE_API_BASE_URL (the Render API origin, e.g.
+# https://sourcethevin-api.onrender.com) MUST be set before the first build: Vite bakes
+# it into the bundle, and without it the app falls back to http://localhost:4000.
+[build]
+  command = "npm ci && npm run build --workspace apps/web"
+  publish = "apps/web/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
