@@ -23,7 +23,11 @@ export default function RequestSellerAccess() {
       await requestSellerAccess({
         email,
         password,
-        dealership: { name: dealershipName, licenseNumber, phone },
+        dealership: {
+          name: dealershipName.trim() || undefined,
+          licenseNumber: licenseNumber.trim() || undefined,
+          phone,
+        },
       });
       setSubmitted(true);
     } catch (err) {
@@ -79,14 +83,12 @@ export default function RequestSellerAccess() {
         <Field
           label="Dealership name (optional)"
           name="dealershipName"
-          required
           value={dealershipName}
           onChange={(event) => setDealershipName(event.target.value)}
         />
         <Field
           label="Dealer license number (optional)"
           name="licenseNumber"
-          required
           value={licenseNumber}
           onChange={(event) => setLicenseNumber(event.target.value)}
         />
