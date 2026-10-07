@@ -4,6 +4,7 @@ import MessageThread from '../../components/MessageThread';
 import { ApiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
 import {
+  appendInternalNote,
   declineSubmission,
   getSubmissionDetail,
   overrideValuation,
@@ -513,7 +514,8 @@ function InternalNotesCard({
   authFetch: ReturnType<typeof useAuth>['authFetch'];
   valuation: SubmissionListItem['valuation'];
 }) {
-  const [notes, setNotes] = useState(valuation?.internalNotes ?? '');
+  const [notes, setNotes] = useState('');
+  const [noteHistory, setNoteHistory] = useState(valuation?.internalNoteHistory ?? []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -521,12 +523,9 @@ function InternalNotesCard({
     setSaving(true);
     setError(null);
     try {
-      await saveValuation(authFetch, submissionId, {
-        bidReferences: valuation?.bidReferences.map((b) => ({ ...b })) ?? [],
-        estimatedExpenses: valuation?.estimatedExpenses ?? EMPTY_EXPENSES,
-        targetMargin: valuation?.targetMargin ?? 0,
-        internalNotes: notes,
-      });
+      const updated = await appendInternalNote(authFetch, submissionId, notes);
+      setNoteHistory(updated.internalNoteHistory);
+      setNotes('');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to save notes.');
     } finally {
@@ -543,6 +542,7 @@ function InternalNotesCard({
         </span>
       </div>
       <textarea
+        aria-label="Internal notes"
         rows={3}
         value={notes}
         onChange={(event) => setNotes(event.target.value)}
@@ -555,7 +555,7 @@ function InternalNotesCard({
       )}
       <button
         type="button"
-        disabled={saving}
+        disabled={saving || !notes.trim()}
         onClick={() => {
           void handleSave();
         }}
@@ -563,6 +563,23 @@ function InternalNotesCard({
       >
         {saving ? 'Saving…' : 'Save notes'}
       </button>
+      <div role="group" aria-label="Saved notes" className="mt-3 space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Saved notes</p>
+        {noteHistory.length === 0 ? (
+          <p className="rounded-md bg-ink-50 p-3 text-sm text-ink-500">No saved notes.</p>
+        ) : (
+          [...noteHistory]
+            .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+            .map((note, index) => (
+              <article key={`${note.createdAt}-${index}`} className="rounded-md bg-ink-50 p-3">
+                <time dateTime={note.createdAt} className="text-xs font-semibold text-ink-700">
+                  {new Date(note.createdAt).toLocaleString()}
+                </time>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-ink-900">{note.text}</p>
+              </article>
+            ))
+        )}
+      </div>
     </div>
   );
 }

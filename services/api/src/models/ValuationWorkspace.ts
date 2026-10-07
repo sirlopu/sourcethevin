@@ -29,6 +29,14 @@ const buyerOverrideSchema = new Schema(
   { _id: false },
 );
 
+const internalNoteSchema = new Schema(
+  {
+    text: { type: String, required: true },
+    createdAt: { type: Date, required: true, default: Date.now },
+  },
+  { _id: false },
+);
+
 const valuationWorkspaceSchema = new Schema(
   {
     submissionId: { type: Schema.Types.ObjectId, required: true, unique: true, ref: 'Submission' },
@@ -39,7 +47,7 @@ const valuationWorkspaceSchema = new Schema(
     // Always server-computed — never accepted from the client. See lib/valuation.ts.
     recommendedMaxAcquisition: { type: Number, default: 0 },
     buyerOverride: buyerOverrideSchema,
-    internalNotes: { type: String, default: '' },
+    internalNoteHistory: { type: [internalNoteSchema], default: [] },
   },
   // minimize: false — see Submission.ts for why (empty nested objects would
   // otherwise vanish from the JSON response instead of serializing as `{}`).

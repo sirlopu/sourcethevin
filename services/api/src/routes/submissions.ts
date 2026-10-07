@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import {
   MIN_REQUIRED_PHOTOS,
+  internalNoteInputSchema,
   messageCreateInputSchema,
   offerCreateInputSchema,
   photoSlotSchema,
@@ -383,7 +384,7 @@ function emptyValuation(submissionId: string, tenantId: string) {
     targetMargin: 0,
     recommendedMaxAcquisition: 0,
     buyerOverride: null,
-    internalNotes: '',
+    internalNoteHistory: [],
   };
 }
 
@@ -403,6 +404,40 @@ submissionsRouter.get(
   },
 );
 
+submissionsRouter.post(
+  '/:id/valuation/notes',
+  requireRole('trade_desk'),
+  async (req: Request, res: Response) => {
+    const submission = await loadTenantSubmission(paramId(req), req.user!.tenantId);
+    if (!submission) {
+      res.status(404).json({ error: 'Submission not found' });
+      return;
+    }
+
+    const parsed = internalNoteInputSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+
+    const valuation = await ValuationWorkspace.findOneAndUpdate(
+      { submissionId: submission._id, tenantId: submission.tenantId },
+      {
+        $setOnInsert: { submissionId: submission._id, tenantId: submission.tenantId },
+        $push: {
+          internalNoteHistory: {
+            $each: [{ text: parsed.data.text, createdAt: new Date() }],
+            $sort: { createdAt: -1 },
+          },
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
+
+    res.status(200).json(valuation);
+  },
+);
+
 submissionsRouter.put(
   '/:id/valuation',
   requireRole('trade_desk'),
@@ -418,7 +453,7 @@ submissionsRouter.put(
       res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
-    const { bidReferences, estimatedExpenses, targetMargin, internalNotes } = parsed.data;
+    const { bidReferences, estimatedExpenses, targetMargin } = parsed.data;
 
     const recommendedMaxAcquisition = computeRecommendedMaxAcquisition(
       bidReferences,
@@ -438,7 +473,6 @@ submissionsRouter.put(
         })),
         estimatedExpenses,
         targetMargin,
-        internalNotes: internalNotes ?? '',
         recommendedMaxAcquisition,
       },
       { upsert: true, new: true, setDefaultsOnInsert: true },

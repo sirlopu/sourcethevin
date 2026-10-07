@@ -23,6 +23,11 @@ export interface BuyerOverride {
   loggedAt: string;
 }
 
+export interface InternalNoteHistoryItem {
+  text: string;
+  createdAt: string;
+}
+
 export interface ValuationRecord {
   submissionId: string;
   tenantId: string;
@@ -31,7 +36,7 @@ export interface ValuationRecord {
   targetMargin: number;
   recommendedMaxAcquisition: number;
   buyerOverride: BuyerOverride | null;
-  internalNotes: string;
+  internalNoteHistory: InternalNoteHistoryItem[];
 }
 
 export interface SellerInfo {
@@ -86,6 +91,15 @@ export function saveValuation(authFetch: AuthFetch, submissionId: string, input:
     authFetch(`/submissions/${submissionId}/valuation`, {
       method: 'PUT',
       body: JSON.stringify(input),
+    }),
+  );
+}
+
+export function appendInternalNote(authFetch: AuthFetch, submissionId: string, text: string) {
+  return parseJson<ValuationRecord>(
+    authFetch(`/submissions/${submissionId}/valuation/notes`, {
+      method: 'POST',
+      body: JSON.stringify({ text }),
     }),
   );
 }
