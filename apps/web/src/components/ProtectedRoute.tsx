@@ -7,10 +7,12 @@ export function ProtectedRoute({
   roles,
   children,
   skipPasswordGate = false,
+  forbidden,
 }: {
   roles: Role[];
   children: ReactNode;
   skipPasswordGate?: boolean;
+  forbidden?: ReactNode;
 }) {
   const { user, initializing } = useAuth();
 
@@ -24,7 +26,7 @@ export function ProtectedRoute({
     return <Navigate to="/change-password" replace />;
   }
   if (!roles.includes(user.role)) {
-    return <Navigate to={roleHome(user.role)} replace />;
+    return forbidden ?? <Navigate to={roleHome(user.role)} replace />;
   }
   return <>{children}</>;
 }

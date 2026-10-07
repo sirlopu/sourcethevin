@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import SubmissionNotFound from '../SubmissionNotFound';
 import { ApiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
 import { getSubmission, type SubmissionRecord } from '../../lib/wizard-api';
@@ -48,6 +49,7 @@ export default function WizardShell() {
   const { authFetch } = useAuth();
   const [submission, setSubmission] = useState<SubmissionRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [redirectToDashboard, setRedirectToDashboard] = useState(false);
 
   useEffect(() => {
     if (!id || isNew) return;
@@ -58,7 +60,11 @@ export default function WizardShell() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setError(err instanceof ApiError ? err.message : 'Unable to load this trade-in.');
+        if (err instanceof ApiError && err.status === 404) {
+          setRedirectToDashboard(true);
+        } else {
+          setError(err instanceof ApiError ? err.message : 'Unable to load this trade-in.');
+        }
       });
     return () => {
       cancelled = true;
@@ -74,6 +80,7 @@ export default function WizardShell() {
   ) {
     return <Navigate to="/dashboard" replace />;
   }
+  if (redirectToDashboard) return <SubmissionNotFound />;
 
   const StepComponent = STEP_COMPONENTS[stepNumber]!;
 

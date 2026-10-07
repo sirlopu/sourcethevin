@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import SubmissionNotFound from './components/SubmissionNotFound';
 import WizardShell from './components/wizard/WizardShell';
 import { AuthProvider, useAuth } from './lib/auth-context';
 import { roleHome } from './lib/role';
@@ -81,7 +82,7 @@ export default function App() {
         <Route
           path="/submissions/:id/audit"
           element={
-            <ProtectedRoute roles={['trade_desk', 'admin']}>
+            <ProtectedRoute roles={['trade_desk', 'admin']} forbidden={<SubmissionNotFound />}>
               <AuditTrail />
             </ProtectedRoute>
           }

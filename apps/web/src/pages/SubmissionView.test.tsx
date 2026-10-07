@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiError } from '../lib/api';
 import type { OfferRecord } from '../lib/offers-api';
 import type { SubmissionRecord } from '../lib/wizard-api';
 import SubmissionView from './SubmissionView';
@@ -64,6 +65,7 @@ function renderPage() {
     <MemoryRouter initialEntries={['/submissions/submission-1']}>
       <Routes>
         <Route path="/submissions/:id" element={<SubmissionView />} />
+        <Route path="/dashboard" element={<p>Dashboard page</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -76,6 +78,15 @@ beforeEach(() => {
 });
 
 describe('SubmissionView offer expiry', () => {
+  it('redirects to the dashboard when the submission is not viewable', async () => {
+    mocks.getSubmission.mockRejectedValue(new ApiError(404, 'Submission not found'));
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'Submission not found' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Go to dashboard' })).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('shows an expired state without response controls for an expired offer', async () => {
     mocks.getLatestOffer.mockResolvedValue(offer('2000-01-01T00:00:00.000Z'));
     renderPage();

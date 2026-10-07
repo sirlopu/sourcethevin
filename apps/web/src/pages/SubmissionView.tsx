@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import MessageThread from '../components/MessageThread';
+import SubmissionNotFound from '../components/SubmissionNotFound';
 import { ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth-context';
 import {
@@ -34,6 +35,7 @@ export default function SubmissionView() {
   const [offer, setOffer] = useState<OfferRecord | null>(null);
   const [auditEntries, setAuditEntries] = useState<AuditLogEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [redirectToDashboard, setRedirectToDashboard] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!id) return;
@@ -47,7 +49,11 @@ export default function SubmissionView() {
       setOffer(nextOffer);
       setAuditEntries(nextAudit);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Unable to load this trade-in.');
+      if (err instanceof ApiError && err.status === 404) {
+        setRedirectToDashboard(true);
+      } else {
+        setError(err instanceof ApiError ? err.message : 'Unable to load this trade-in.');
+      }
     }
   }, [id, authFetch]);
 
@@ -56,6 +62,8 @@ export default function SubmissionView() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
   }, [refresh]);
+
+  if (redirectToDashboard) return <SubmissionNotFound />;
 
   if (error) {
     return (
