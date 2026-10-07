@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SubmissionListItem } from '../../lib/desk-api';
+import type { OfferRecord } from '../../lib/offers-api';
 import SubmissionDetail from './SubmissionDetail';
 
 const mocks = vi.hoisted(() => ({
@@ -59,6 +60,20 @@ const submission: SubmissionListItem = {
       { text: 'Latest existing note', createdAt: '2026-10-02T12:00:00.000Z' },
     ],
   },
+};
+
+const expiredOffer: OfferRecord = {
+  _id: 'offer-1',
+  submissionId: submission._id,
+  version: 1,
+  amount: 1000,
+  expiresAt: '2000-01-01T00:00:00.000Z',
+  terms: '',
+  notes: '',
+  status: 'pending',
+  createdByRole: 'trade_desk',
+  createdBy: 'desk-user-1',
+  createdAt: '1999-12-31T00:00:00.000Z',
 };
 
 function renderPage() {
@@ -136,5 +151,16 @@ describe('SubmissionDetail internal notes', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Unable to save notes.');
     expect(editor).toHaveValue('Unsaved edit');
     expect(within(savedNotes).getByText('Latest existing note')).toBeInTheDocument();
+  });
+});
+
+describe('SubmissionDetail offer status', () => {
+  it('shows expired instead of pending when the latest offer deadline has passed', async () => {
+    mocks.getLatestOffer.mockResolvedValue(expiredOffer);
+    renderPage();
+
+    const status = await screen.findByRole('status');
+    expect(status).toHaveTextContent('expired');
+    expect(status).toHaveClass('bg-danger-bg', 'text-danger');
   });
 });

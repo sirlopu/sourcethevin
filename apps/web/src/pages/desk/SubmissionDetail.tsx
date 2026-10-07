@@ -279,6 +279,12 @@ function OfferPanel({
   const [sending, setSending] = useState(false);
   const [responding, setResponding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [clock, setClock] = useState(() => Date.now());
+  const offerExpiresAt = latestOffer ? new Date(latestOffer.expiresAt).getTime() : null;
+  const offerExpired =
+    latestOffer?.status === 'pending' &&
+    offerExpiresAt !== null &&
+    (clock >= offerExpiresAt || Date.now() >= offerExpiresAt);
 
   useEffect(() => {
     let cancelled = false;
@@ -294,6 +300,14 @@ function OfferPanel({
       cancelled = true;
     };
   }, [authFetch, submissionId]);
+
+  useEffect(() => {
+    if (latestOffer?.status !== 'pending') return;
+    const delay = new Date(latestOffer.expiresAt).getTime() - Date.now();
+    if (delay <= 0) return;
+    const timeout = window.setTimeout(() => setClock(Date.now()), delay);
+    return () => window.clearTimeout(timeout);
+  }, [latestOffer?._id, latestOffer?.status, latestOffer?.expiresAt]);
 
   const resolved = submissionStatus === 'accepted' || submissionStatus === 'declined';
 
@@ -382,8 +396,16 @@ function OfferPanel({
             <span className="font-semibold text-ink-900">
               v{latestOffer.version} · ${latestOffer.amount.toLocaleString()}
             </span>
-            <span className="text-xs font-semibold uppercase text-ink-500">
-              {latestOffer.status}
+            <span
+              role="status"
+              aria-live="polite"
+              className={
+                offerExpired
+                  ? 'inline-flex rounded-full bg-danger-bg px-2 py-0.5 text-xs font-semibold uppercase text-danger'
+                  : 'text-xs font-semibold uppercase text-ink-500'
+              }
+            >
+              {offerExpired ? 'expired' : latestOffer.status}
             </span>
           </div>
           {latestOffer.createdByRole === 'seller' && latestOffer.status === 'pending' && (
