@@ -2,7 +2,7 @@ import { Router, type CookieOptions, type Request, type Response } from 'express
 import { authRateLimiter } from '../middleware/rateLimit';
 import { requireAuth } from '../middleware/requireAuth';
 import { hashPassword, verifyPassword } from '../lib/password';
-import { getDeskRecipients, notify } from '../lib/notifications';
+import { getSellerRequestRecipients, notify } from '../lib/notifications';
 import { DEFAULT_TENANT_ID } from '../lib/tenant';
 import { generateRefreshToken, hashRefreshToken, signAccessToken } from '../lib/tokens';
 import { User } from '../models/User';
@@ -67,7 +67,7 @@ authRouter.post('/register-seller-request', async (req: Request, res: Response) 
   await notify({
     tenantId: user.tenantId,
     type: 'seller_request_received',
-    recipients: await getDeskRecipients(user.tenantId),
+    recipients: await getSellerRequestRecipients(user.tenantId),
     title: 'New seller registration',
     body: `${user.email} requested a seller account and is awaiting approval.`,
     link: '/admin/users',

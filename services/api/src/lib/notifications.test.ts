@@ -14,7 +14,14 @@ vi.mock('./email', () => ({
 import { Notification } from '../models/Notification';
 import { User } from '../models/User';
 import { sendEmail } from './email';
-import { getDeskRecipients, getSeller, notify } from './notifications';
+import {
+  getAdminRecipients,
+  getDeskRecipients,
+  getSeller,
+  getSellerRequestRecipients,
+  notify,
+  notifySellerRequestApproved,
+} from './notifications';
 
 beforeEach(() => {
   vi.mocked(Notification.insertMany)
@@ -45,8 +52,8 @@ describe('notify', () => {
       submissionId: 's1',
       type: 'offer_sent',
       recipients: [
-        { _id: 'u1', email: 'seller@example.com' },
-        { _id: 'u2', email: 'desk@example.com' },
+        { _id: 'u1', email: 'seller@example.com', role: 'seller' },
+        { _id: 'u2', email: 'desk@example.com', role: 'trade_desk' },
       ],
       title: 'You have a new offer',
       body: 'A new offer was sent.',
@@ -66,18 +73,126 @@ describe('notify', () => {
       expect.objectContaining({ to: 'desk@example.com', subject: 'You have a new offer' }),
     );
   });
+
+  it('excludes admins from every notification type except seller requests', async () => {
+    await notify({
+      tenantId: 't1',
+      type: 'submission_submitted',
+      recipients: [
+        { _id: 'admin-1', email: 'admin@example.com', role: 'admin' },
+        { _id: 'desk-1', email: 'desk@example.com', role: 'trade_desk' },
+      ],
+      title: 'New trade submitted',
+      body: 'A trade is ready for review.',
+    });
+
+    expect(Notification.insertMany).toHaveBeenCalledWith([
+      expect.objectContaining({ recipientId: 'desk-1', type: 'submission_submitted' }),
+    ]);
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    expect(sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'desk@example.com' }),
+    );
+  });
+
+  it.each([
+    'seller_request_received',
+    'seller_request_approved',
+    'user_role_changed',
+    'user_status_changed',
+  ] as const)(
+    'allows admins to receive %s',
+    async (type) => {
+      await notify({
+        tenantId: 't1',
+        type,
+        recipients: [{ _id: 'admin-1', email: 'admin@example.com', role: 'admin' }],
+        title: 'Seller request',
+        body: 'Seller request update.',
+      });
+
+      expect(Notification.insertMany).toHaveBeenCalledWith([
+        expect.objectContaining({ recipientId: 'admin-1', type }),
+      ]);
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ to: 'admin@example.com' }),
+      );
+    },
+  );
 });
 
 describe('getDeskRecipients', () => {
-  it('queries trade_desk and admin users in the tenant', async () => {
+  it('queries only trade-desk users in the tenant', async () => {
     vi.mocked(User.find).mockResolvedValue([] as never);
 
     await getDeskRecipients('tenant-1');
 
     expect(User.find).toHaveBeenCalledWith({
       tenantId: 'tenant-1',
-      role: { $in: ['trade_desk', 'admin'] },
+      role: 'trade_desk',
     });
+  });
+});
+
+describe('getAdminRecipients', () => {
+  it('queries only admin users in the tenant', async () => {
+    vi.mocked(User.find).mockResolvedValue([] as never);
+
+    await getAdminRecipients('tenant-1');
+
+    expect(User.find).toHaveBeenCalledWith({
+      tenantId: 'tenant-1',
+      role: 'admin',
+    });
+  });
+});
+
+describe('getSellerRequestRecipients', () => {
+  it('combines tenant trade-desk and admin users', async () => {
+    const deskUser = { _id: 'desk-1', email: 'desk@example.com', role: 'trade_desk' };
+    const adminUser = { _id: 'admin-1', email: 'admin@example.com', role: 'admin' };
+    vi.mocked(User.find)
+      .mockResolvedValueOnce([deskUser] as never)
+      .mockResolvedValueOnce([adminUser] as never);
+
+    const recipients = await getSellerRequestRecipients('tenant-1');
+
+    expect(User.find).toHaveBeenNthCalledWith(1, { tenantId: 'tenant-1', role: 'trade_desk' });
+    expect(User.find).toHaveBeenNthCalledWith(2, { tenantId: 'tenant-1', role: 'admin' });
+    expect(recipients).toEqual([deskUser, adminUser]);
+  });
+});
+
+describe('notifySellerRequestApproved', () => {
+  it('sends role-appropriate approval notifications to the seller and tenant admins', async () => {
+    const seller = {
+      _id: 'seller-1',
+      email: 'seller@example.com',
+      role: 'seller',
+      tenantId: 'tenant-1',
+    };
+    const admin = { _id: 'admin-1', email: 'admin@example.com', role: 'admin' };
+    vi.mocked(User.find).mockResolvedValue([admin] as never);
+
+    await notifySellerRequestApproved(seller as never);
+
+    expect(User.find).toHaveBeenCalledWith({ tenantId: 'tenant-1', role: 'admin' });
+    expect(Notification.insertMany).toHaveBeenNthCalledWith(1, [
+      expect.objectContaining({
+        recipientId: 'seller-1',
+        type: 'seller_request_approved',
+        title: 'Your account was approved',
+        body: 'Your seller account was approved. You can now sign in.',
+      }),
+    ]);
+    expect(Notification.insertMany).toHaveBeenNthCalledWith(2, [
+      expect.objectContaining({
+        recipientId: 'admin-1',
+        type: 'seller_request_approved',
+        title: 'Seller account approved',
+        body: 'seller@example.com was approved. They can now sign in.',
+      }),
+    ]);
   });
 });
 

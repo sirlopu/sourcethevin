@@ -7,7 +7,15 @@ import type { SubmissionDocument } from '../models/Submission';
 interface RecipientLike {
   _id: Types.ObjectId | string;
   email: string;
+  role: UserDocument['role'];
 }
+
+const ADMIN_NOTIFICATION_TYPES = new Set<NotificationType>([
+  'seller_request_received',
+  'seller_request_approved',
+  'user_role_changed',
+  'user_status_changed',
+]);
 
 export interface NotifyParams {
   tenantId: Types.ObjectId | string;
@@ -26,10 +34,14 @@ export interface NotifyParams {
  */
 export async function notify(params: NotifyParams): Promise<void> {
   const { tenantId, submissionId, type, recipients, title, body, link } = params;
-  if (recipients.length === 0) return;
+  const eligibleRecipients = recipients.filter(
+    (recipient) =>
+      recipient.role !== 'admin' || ADMIN_NOTIFICATION_TYPES.has(type),
+  );
+  if (eligibleRecipients.length === 0) return;
 
   await Notification.insertMany(
-    recipients.map((recipient) => ({
+    eligibleRecipients.map((recipient) => ({
       tenantId,
       submissionId,
       recipientId: recipient._id,
@@ -40,7 +52,7 @@ export async function notify(params: NotifyParams): Promise<void> {
     })),
   );
 
-  for (const recipient of recipients) {
+  for (const recipient of eligibleRecipients) {
     void sendEmail({
       to: recipient.email,
       subject: title,
@@ -50,11 +62,42 @@ export async function notify(params: NotifyParams): Promise<void> {
   }
 }
 
-/** Every trade_desk/admin user in a tenant — there's no per-submission desk assignment, so
- * queue-facing events fan out to the whole desk staff, matching how the desk queue itself
- * is scoped tenant-wide rather than per-agent. */
+/** Every trade-desk user in a tenant; queue-facing events have no per-submission assignment. */
 export function getDeskRecipients(tenantId: Types.ObjectId | string): Promise<UserDocument[]> {
-  return User.find({ tenantId, role: { $in: ['trade_desk', 'admin'] } });
+  return User.find({ tenantId, role: 'trade_desk' });
+}
+
+export function getAdminRecipients(tenantId: Types.ObjectId | string): Promise<UserDocument[]> {
+  return User.find({ tenantId, role: 'admin' });
+}
+
+export async function getSellerRequestRecipients(
+  tenantId: Types.ObjectId | string,
+): Promise<UserDocument[]> {
+  const [deskRecipients, adminRecipients] = await Promise.all([
+    getDeskRecipients(tenantId),
+    getAdminRecipients(tenantId),
+  ]);
+  return [...deskRecipients, ...adminRecipients];
+}
+
+export async function notifySellerRequestApproved(seller: UserDocument): Promise<void> {
+  await notify({
+    tenantId: seller.tenantId,
+    type: 'seller_request_approved',
+    recipients: [seller],
+    title: 'Your account was approved',
+    body: 'Your seller account was approved. You can now sign in.',
+  });
+
+  const admins = await getAdminRecipients(seller.tenantId);
+  await notify({
+    tenantId: seller.tenantId,
+    type: 'seller_request_approved',
+    recipients: admins,
+    title: 'Seller account approved',
+    body: `${seller.email} was approved. They can now sign in.`,
+  });
 }
 
 export async function getSeller(
