@@ -284,7 +284,7 @@ function OfferPanel({
   const offerExpired =
     latestOffer?.status === 'pending' &&
     offerExpiresAt !== null &&
-    (clock >= offerExpiresAt || Date.now() >= offerExpiresAt);
+    clock >= offerExpiresAt;
 
   useEffect(() => {
     let cancelled = false;
@@ -303,8 +303,8 @@ function OfferPanel({
 
   useEffect(() => {
     if (latestOffer?.status !== 'pending') return;
-    const delay = new Date(latestOffer.expiresAt).getTime() - Date.now();
-    if (delay <= 0) return;
+    // Fire immediately (next tick) if already past expiry so `clock` catches up.
+    const delay = Math.max(new Date(latestOffer.expiresAt).getTime() - Date.now(), 0);
     const timeout = window.setTimeout(() => setClock(Date.now()), delay);
     return () => window.clearTimeout(timeout);
   }, [latestOffer?._id, latestOffer?.status, latestOffer?.expiresAt]);

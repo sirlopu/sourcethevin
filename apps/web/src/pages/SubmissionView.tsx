@@ -198,11 +198,11 @@ function OfferReviewCard({
   const [counterNotes, setCounterNotes] = useState('');
   const [clock, setClock] = useState(() => Date.now());
   const expiresAt = new Date(offer.expiresAt).getTime();
-  const expired = clock >= expiresAt || Date.now() >= expiresAt;
+  const expired = clock >= expiresAt;
 
   useEffect(() => {
-    const delay = expiresAt - Date.now();
-    if (delay <= 0) return;
+    // Fire immediately (next tick) if already past expiry so `clock` catches up.
+    const delay = Math.max(expiresAt - Date.now(), 0);
     const timeout = window.setTimeout(() => setClock(Date.now()), delay);
     return () => window.clearTimeout(timeout);
   }, [expiresAt]);
