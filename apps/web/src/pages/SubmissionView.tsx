@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import MessageThread from '../components/MessageThread';
+import SubmissionNotFound from '../components/SubmissionNotFound';
 import { ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth-context';
 import {
@@ -34,6 +35,7 @@ export default function SubmissionView() {
   const [offer, setOffer] = useState<OfferRecord | null>(null);
   const [auditEntries, setAuditEntries] = useState<AuditLogEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [redirectToDashboard, setRedirectToDashboard] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!id) return;
@@ -47,7 +49,11 @@ export default function SubmissionView() {
       setOffer(nextOffer);
       setAuditEntries(nextAudit);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Unable to load this trade-in.');
+      if (err instanceof ApiError && err.status === 404) {
+        setRedirectToDashboard(true);
+      } else {
+        setError(err instanceof ApiError ? err.message : 'Unable to load this trade-in.');
+      }
     }
   }, [id, authFetch]);
 
@@ -56,6 +62,8 @@ export default function SubmissionView() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
   }, [refresh]);
+
+  if (redirectToDashboard) return <SubmissionNotFound />;
 
   if (error) {
     return (
@@ -188,6 +196,16 @@ function OfferReviewCard({
   const [counterOpen, setCounterOpen] = useState(false);
   const [counterAmount, setCounterAmount] = useState('');
   const [counterNotes, setCounterNotes] = useState('');
+  const [clock, setClock] = useState(() => Date.now());
+  const expiresAt = new Date(offer.expiresAt).getTime();
+  const expired = clock >= expiresAt;
+
+  useEffect(() => {
+    // Fire immediately (next tick) if already past expiry so `clock` catches up.
+    const delay = Math.max(expiresAt - Date.now(), 0);
+    const timeout = window.setTimeout(() => setClock(Date.now()), delay);
+    return () => window.clearTimeout(timeout);
+  }, [expiresAt]);
 
   async function handleAccept() {
     setSubmitting(true);
@@ -239,8 +257,12 @@ function OfferReviewCard({
         <p className="text-xs font-semibold uppercase tracking-wide text-blue-300">
           Offer received
         </p>
-        <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-blue-100">
-          ● Awaiting your response
+        <span
+          role="status"
+          aria-live="polite"
+          className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${expired ? 'bg-red-200 text-red-950' : 'bg-white/10 text-blue-100'}`}
+        >
+          {expired ? '!' : '●'} {expired ? 'Offer expired' : 'Awaiting your response'}
         </span>
 
         <p className="mt-4 font-mono text-xs text-blue-100">{submission.referenceId}</p>
@@ -269,70 +291,80 @@ function OfferReviewCard({
           </p>
         )}
 
-        <button
-          type="button"
-          disabled={submitting}
-          onClick={() => {
-            void handleAccept();
-          }}
-          className="mt-5 w-full rounded-md bg-success py-3 font-display font-semibold text-white hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Accept offer
-        </button>
-        <button
-          type="button"
-          disabled={submitting}
-          onClick={() => {
-            void handleDecline();
-          }}
-          className="mt-2 w-full rounded-md border-[1.5px] border-red-300 py-3 font-display font-semibold text-red-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Decline
-        </button>
-        <button
-          type="button"
-          onClick={() => setCounterOpen((open) => !open)}
-          className="mt-2 w-full text-center text-sm font-semibold text-blue-100 hover:underline"
-        >
-          {counterOpen ? 'Cancel counter-offer' : 'Propose a different amount'}
-        </button>
-
-        {counterOpen && (
-          <div className="mt-3 space-y-2 rounded-md bg-white/10 p-3">
-            <label className="block">
-              <span className="text-xs text-blue-100">Your counter amount</span>
-              <input
-                type="number"
-                value={counterAmount}
-                onChange={(event) => setCounterAmount(event.target.value)}
-                className="mt-1 w-full rounded-md border-[1.5px] border-transparent bg-white px-2 py-1.5 text-sm text-navy-900 outline-none focus:border-blue-400"
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs text-blue-100">Note (optional)</span>
-              <textarea
-                rows={2}
-                value={counterNotes}
-                onChange={(event) => setCounterNotes(event.target.value)}
-                className="mt-1 w-full rounded-md border-[1.5px] border-transparent bg-white px-2 py-1.5 text-sm text-navy-900 outline-none focus:border-blue-400"
-              />
-            </label>
+        {expired ? (
+          <p className="mt-5 rounded-md border border-red-300/40 bg-red-950/40 p-3 text-center text-sm font-semibold text-red-100">
+            This offer has expired. Message the Trade Desk to ask for a new offer.
+          </p>
+        ) : (
+          <>
             <button
               type="button"
               disabled={submitting}
               onClick={() => {
-                void handleCounter();
+                void handleAccept();
               }}
-              className="w-full rounded-md bg-white py-2 text-sm font-semibold text-navy-900 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-5 w-full rounded-md bg-success py-3 font-display font-semibold text-white hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {submitting ? 'Sending…' : 'Send counter-offer'}
+              Accept offer
             </button>
-          </div>
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={() => {
+                void handleDecline();
+              }}
+              className="mt-2 w-full rounded-md border-[1.5px] border-red-300 py-3 font-display font-semibold text-red-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Decline
+            </button>
+            <button
+              type="button"
+              onClick={() => setCounterOpen((open) => !open)}
+              className="mt-2 w-full text-center text-sm font-semibold text-blue-100 hover:underline"
+            >
+              {counterOpen ? 'Cancel counter-offer' : 'Propose a different amount'}
+            </button>
+
+            {counterOpen && (
+              <div className="mt-3 space-y-2 rounded-md bg-white/10 p-3">
+                <label className="block">
+                  <span className="text-xs text-blue-100">Your counter amount</span>
+                  <input
+                    type="number"
+                    value={counterAmount}
+                    onChange={(event) => setCounterAmount(event.target.value)}
+                    className="mt-1 w-full rounded-md border-[1.5px] border-transparent bg-white px-2 py-1.5 text-sm text-navy-900 outline-none focus:border-blue-400"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs text-blue-100">Note (optional)</span>
+                  <textarea
+                    rows={2}
+                    value={counterNotes}
+                    onChange={(event) => setCounterNotes(event.target.value)}
+                    className="mt-1 w-full rounded-md border-[1.5px] border-transparent bg-white px-2 py-1.5 text-sm text-navy-900 outline-none focus:border-blue-400"
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => {
+                    void handleCounter();
+                  }}
+                  className="w-full rounded-md bg-white py-2 text-sm font-semibold text-navy-900 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {submitting ? 'Sending…' : 'Send counter-offer'}
+                </button>
+              </div>
+            )}
+          </>
         )}
 
-        <p className="mt-4 text-center text-xs text-blue-100">
-          Accepting records your name, the date &amp; time, and offer version.
-        </p>
+        {!expired && (
+          <p className="mt-4 text-center text-xs text-blue-100">
+            Accepting records your name, the date &amp; time, and offer version.
+          </p>
+        )}
       </div>
     </div>
   );

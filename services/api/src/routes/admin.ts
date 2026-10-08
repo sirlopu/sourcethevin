@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { Router, type Request, type Response } from 'express';
 import { buildEmailHtml, sendEmail } from '../lib/email';
 import { hashPassword } from '../lib/password';
-import { notify } from '../lib/notifications';
+import { notify, notifySellerRequestApproved } from '../lib/notifications';
 import { requireAuth } from '../middleware/requireAuth';
 import { requireRole } from '../middleware/requireRole';
 import { User, type UserDocument } from '../models/User';
@@ -217,13 +217,7 @@ adminRouter.post('/seller-requests/:id/approve', async (req: Request, res: Respo
   user.status = 'active';
   await user.save();
 
-  await notify({
-    tenantId: user.tenantId,
-    type: 'seller_request_approved',
-    recipients: [user],
-    title: 'Your account was approved',
-    body: 'Your seller account was approved. You can now sign in.',
-  });
+  await notifySellerRequestApproved(user);
 
   res.status(200).json(serializeUser(user));
 });

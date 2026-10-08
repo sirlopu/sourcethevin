@@ -17,11 +17,15 @@ export const estimatedExpensesSchema = z.object({
 });
 export type EstimatedExpenses = z.infer<typeof estimatedExpensesSchema>;
 
+export const internalNoteInputSchema = z.object({
+  text: z.string().trim().min(1).max(4000),
+});
+export type InternalNoteInput = z.infer<typeof internalNoteInputSchema>;
+
 export const valuationInputSchema = z.object({
   bidReferences: z.array(bidReferenceInputSchema),
   estimatedExpenses: estimatedExpensesSchema,
   targetMargin: z.number().gte(0),
-  internalNotes: z.string().trim().max(4000).optional(),
 });
 export type ValuationInput = z.infer<typeof valuationInputSchema>;
 

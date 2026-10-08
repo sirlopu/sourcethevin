@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "migrate:legacy-damage-slot": "tsx src/scripts/migrate-legacy-damage-slot.ts",
+    "migrate:internal-note-history": "tsx src/scripts/migrate-internal-note-history.ts",
     "create-admin": "tsx src/scripts/create-admin.ts"
   },
   "dependencies": {
