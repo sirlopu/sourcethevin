@@ -90,9 +90,7 @@ describe('notify', () => {
       expect.objectContaining({ recipientId: 'desk-1', type: 'submission_submitted' }),
     ]);
     expect(sendEmail).toHaveBeenCalledTimes(1);
-    expect(sendEmail).toHaveBeenCalledWith(
-      expect.objectContaining({ to: 'desk@example.com' }),
-    );
+    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'desk@example.com' }));
   });
 
   it.each([
@@ -100,25 +98,20 @@ describe('notify', () => {
     'seller_request_approved',
     'user_role_changed',
     'user_status_changed',
-  ] as const)(
-    'allows admins to receive %s',
-    async (type) => {
-      await notify({
-        tenantId: 't1',
-        type,
-        recipients: [{ _id: 'admin-1', email: 'admin@example.com', role: 'admin' }],
-        title: 'Seller request',
-        body: 'Seller request update.',
-      });
+  ] as const)('allows admins to receive %s', async (type) => {
+    await notify({
+      tenantId: 't1',
+      type,
+      recipients: [{ _id: 'admin-1', email: 'admin@example.com', role: 'admin' }],
+      title: 'Seller request',
+      body: 'Seller request update.',
+    });
 
-      expect(Notification.insertMany).toHaveBeenCalledWith([
-        expect.objectContaining({ recipientId: 'admin-1', type }),
-      ]);
-      expect(sendEmail).toHaveBeenCalledWith(
-        expect.objectContaining({ to: 'admin@example.com' }),
-      );
-    },
-  );
+    expect(Notification.insertMany).toHaveBeenCalledWith([
+      expect.objectContaining({ recipientId: 'admin-1', type }),
+    ]);
+    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'admin@example.com' }));
+  });
 });
 
 describe('getDeskRecipients', () => {

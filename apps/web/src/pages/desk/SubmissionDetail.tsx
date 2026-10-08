@@ -282,9 +282,7 @@ function OfferPanel({
   const [clock, setClock] = useState(() => Date.now());
   const offerExpiresAt = latestOffer ? new Date(latestOffer.expiresAt).getTime() : null;
   const offerExpired =
-    latestOffer?.status === 'pending' &&
-    offerExpiresAt !== null &&
-    clock >= offerExpiresAt;
+    latestOffer?.status === 'pending' && offerExpiresAt !== null && clock >= offerExpiresAt;
 
   useEffect(() => {
     let cancelled = false;

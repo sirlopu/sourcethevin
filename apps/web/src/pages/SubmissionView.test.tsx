@@ -82,7 +82,9 @@ describe('SubmissionView offer expiry', () => {
     mocks.getSubmission.mockRejectedValue(new ApiError(404, 'Submission not found'));
     renderPage();
 
-    expect(await screen.findByRole('heading', { name: 'Submission not found' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Submission not found' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Go to dashboard' })).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
@@ -99,7 +101,9 @@ describe('SubmissionView offer expiry', () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Accept offer' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Propose a different amount' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Propose a different amount' }),
+    ).not.toBeInTheDocument();
   });
 
   it('keeps response controls available before the offer expires', async () => {
@@ -120,6 +124,8 @@ describe('SubmissionView offer expiry', () => {
     expect(await screen.findByText(/Offer expired/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Accept offer' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Propose a different amount' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Propose a different amount' }),
+    ).not.toBeInTheDocument();
   });
 });

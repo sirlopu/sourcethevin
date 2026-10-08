@@ -36,7 +36,9 @@ describe('WizardShell submission access', () => {
     mocks.getSubmission.mockRejectedValue(new ApiError(404, 'Submission not found'));
     renderWizard();
 
-    expect(await screen.findByRole('heading', { name: 'Submission not found' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Submission not found' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Go to dashboard' })).toBeInTheDocument();
   });
 

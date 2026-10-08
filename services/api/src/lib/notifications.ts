@@ -35,8 +35,7 @@ export interface NotifyParams {
 export async function notify(params: NotifyParams): Promise<void> {
   const { tenantId, submissionId, type, recipients, title, body, link } = params;
   const eligibleRecipients = recipients.filter(
-    (recipient) =>
-      recipient.role !== 'admin' || ADMIN_NOTIFICATION_TYPES.has(type),
+    (recipient) => recipient.role !== 'admin' || ADMIN_NOTIFICATION_TYPES.has(type),
   );
   if (eligibleRecipients.length === 0) return;
 
