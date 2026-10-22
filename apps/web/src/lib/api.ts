@@ -67,3 +67,17 @@ export function refresh(): Promise<{ accessToken: string }> {
 export function logout(): Promise<void> {
   return apiFetch('/auth/logout', { method: 'POST' });
 }
+
+export function requestPasswordReset(email: string): Promise<{ ok: true }> {
+  return apiFetch('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function resetPassword(token: string, newPassword: string): Promise<{ ok: true }> {
+  return apiFetch('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, newPassword }),
+  });
+}

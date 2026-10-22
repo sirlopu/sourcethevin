@@ -1,4 +1,5 @@
 import { Router, type CookieOptions, type Request, type Response } from 'express';
+import crypto from 'crypto';
 import { authRateLimiter } from '../middleware/rateLimit';
 import { requireAuth } from '../middleware/requireAuth';
 import { hashPassword, verifyPassword } from '../lib/password';
@@ -6,7 +7,8 @@ import { getSellerRequestRecipients, notify } from '../lib/notifications';
 import { DEFAULT_TENANT_ID } from '../lib/tenant';
 import { generateRefreshToken, hashRefreshToken, signAccessToken } from '../lib/tokens';
 import { User } from '../models/User';
-import { changePasswordSchema, loginSchema, registerSellerRequestSchema } from '../validation/auth';
+import { changePasswordSchema, loginSchema, registerSellerRequestSchema, requestPasswordResetSchema, resetPasswordSchema } from '../validation/auth';
+import { buildEmailHtml, sendEmail } from '../lib/email';
 
 const REFRESH_COOKIE_NAME = 'refreshToken';
 const REFRESH_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -182,15 +184,71 @@ authRouter.post('/refresh', async (req: Request, res: Response) => {
   res.status(200).json({ accessToken });
 });
 
-authRouter.post('/logout', async (req: Request, res: Response) => {
-  const token = req.cookies?.[REFRESH_COOKIE_NAME] as string | undefined;
-  if (token) {
-    const hash = hashRefreshToken(token);
-    await User.updateOne(
-      { refreshTokenHash: hash },
-      { refreshTokenHash: null, refreshTokenExpiresAt: null },
-    );
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+authRouter.post('/forgot-password', async (req: Request, res: Response) => {
+  const parsed = requestPasswordResetSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
   }
+  const { email } = parsed.data;
+
+  const user = await User.findOne({ email, status: { $ne: 'suspended' } }).select('+passwordResetTokenHash +passwordResetExpiresAt');
+  if (!user) {
+    res.status(404).json({ error: 'There is no account associated with that email.' });
+    return;
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  user.passwordResetTokenHash = hashToken(token);
+  user.passwordResetExpiresAt = new Date(Date.now() + 60 * 60 * 1000);
+  await user.save();
+
+  const webBaseUrl = process.env.WEB_BASE_URL || 'http://localhost:5173';
+  const resetUrl = `${webBaseUrl}/reset-password?token=${token}`;
+  const title = 'Reset your password';
+  const body = `You requested a password reset.\n\nClick the link below to reset your password (expires in 1 hour):\n${resetUrl}\n\nIf you did not request this, you can ignore this email.`;
+
+  void sendEmail({
+    to: user.email,
+    subject: title,
+    html: buildEmailHtml(title, body),
+    text: body,
+  }).catch((err) => console.error('[auth:forgot-password] failed to send email', err));
+
+  res.status(200).json({ ok: true });
+});
+
+authRouter.post('/reset-password', async (req: Request, res: Response) => {
+  const parsed = resetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const { token, newPassword } = parsed.data;
+
+  const tokenHash = hashToken(token);
+  const user = await User.findOne({
+    passwordResetTokenHash: tokenHash,
+    passwordResetExpiresAt: { $gt: new Date() },
+  }).select('+passwordHash +passwordResetTokenHash +passwordResetExpiresAt');
+
+  if (!user) {
+    res.status(400).json({ error: 'Invalid or expired reset token' });
+    return;
+  }
+
+  user.passwordHash = await hashPassword(newPassword);
+  user.mustChangePassword = false;
+  user.passwordResetTokenHash = null;
+  user.passwordResetExpiresAt = null;
+  user.refreshTokenHash = null;
+  user.refreshTokenExpiresAt = null;
+  await user.save();
+
   clearRefreshCookie(res);
-  res.status(204).send();
+  res.status(200).json({ ok: true });
 });

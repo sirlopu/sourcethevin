@@ -43,6 +43,8 @@ const userSchema = new Schema(
     mustChangePassword: { type: Boolean, required: true, default: false },
     refreshTokenHash: { type: String, default: null, select: false },
     refreshTokenExpiresAt: { type: Date, default: null, select: false },
+    passwordResetTokenHash: { type: String, default: null, select: false },
+    passwordResetExpiresAt: { type: Date, default: null, select: false },
   },
   { timestamps: true },
 );

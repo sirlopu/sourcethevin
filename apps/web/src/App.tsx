@@ -13,6 +13,8 @@ import DeskQueue from './pages/DeskQueue';
 import SubmissionDetail from './pages/desk/SubmissionDetail';
 import RequestSellerAccess from './pages/RequestSellerAccess';
 import SignIn from './pages/SignIn';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import SubmissionView from './pages/SubmissionView';
 
 function RootRedirect() {
@@ -30,6 +32,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<RootRedirect />} />
         <Route path="/login" element={<SignIn />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/request-access" element={<RequestSellerAccess />} />
         <Route
           path="/change-password"
