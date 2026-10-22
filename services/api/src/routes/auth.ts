@@ -48,7 +48,7 @@ authRouter.post('/register-seller-request', async (req: Request, res: Response) 
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
-  const { email, password, dealership } = parsed.data;
+  const { email, firstName, lastName, dealership } = parsed.data;
 
   const existing = await User.findOne({ email });
   if (existing) {
@@ -56,14 +56,17 @@ authRouter.post('/register-seller-request', async (req: Request, res: Response) 
     return;
   }
 
-  const passwordHash = await hashPassword(password);
+  const passwordHash = await hashPassword(crypto.randomBytes(32).toString('hex'));
   const user = await User.create({
     email,
+    firstName,
+    lastName,
     passwordHash,
     role: 'seller',
     status: 'pending',
     tenantId: DEFAULT_TENANT_ID,
     dealership,
+    mustChangePassword: true,
   });
 
   await notify({

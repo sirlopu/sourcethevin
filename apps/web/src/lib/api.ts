@@ -47,8 +47,9 @@ export function login(email: string, password: string): Promise<LoginResult> {
 
 export interface RequestSellerAccessInput {
   email: string;
-  password: string;
-  dealership: { name?: string; licenseNumber?: string; phone: string };
+  firstName: string;
+  lastName: string;
+  dealership: { name: string; licenseNumber?: string; phone: string };
 }
 
 export function requestSellerAccess(

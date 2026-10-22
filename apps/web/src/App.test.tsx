@@ -136,17 +136,48 @@ describe('App', () => {
     expect(passwordInput).toHaveAttribute('type', 'password');
   });
 
-  it('shows and hides the requested seller password', async () => {
+  it('submits seller access without a password and links to terms', async () => {
+    vi.mocked(api.requestSellerAccess).mockResolvedValue({ id: 'u4', status: 'pending' });
     const user = userEvent.setup();
     renderApp('/request-access');
 
-    const passwordInput = await screen.findByLabelText('Password');
-    expect(passwordInput).toHaveAttribute('type', 'password');
+    await screen.findByAltText('SourceTheVIN');
+    await user.type(screen.getByLabelText('Email'), 'seller@example.com');
+    await user.type(screen.getByLabelText('First name'), 'Sam');
+    await user.type(screen.getByLabelText('Last name'), 'Seller');
+    await user.type(screen.getByLabelText('Dealership name'), 'Example Motors');
+    await user.type(screen.getByLabelText('Dealer license number (optional)'), 'DL-123');
+    await user.type(screen.getByLabelText('Phone'), '555-0100');
+    expect(screen.queryByLabelText('Password')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Terms & Conditions' })).toHaveAttribute('href', '/terms');
 
-    await user.click(screen.getByRole('button', { name: 'Show password' }));
-    expect(passwordInput).toHaveAttribute('type', 'text');
+    await user.click(screen.getByRole('button', { name: 'Request seller access' }));
 
-    await user.click(screen.getByRole('button', { name: 'Hide password' }));
-    expect(passwordInput).toHaveAttribute('type', 'password');
+    expect(await screen.findByText('Request received')).toBeInTheDocument();
+    expect(api.requestSellerAccess).toHaveBeenCalledWith({
+      email: 'seller@example.com',
+      firstName: 'Sam',
+      lastName: 'Seller',
+      dealership: { name: 'Example Motors', licenseNumber: 'DL-123', phone: '555-0100' },
+    });
+  });
+
+  it('lists missing required fields without submitting the request', async () => {
+    const user = userEvent.setup();
+    renderApp('/request-access');
+
+    await screen.findByAltText('SourceTheVIN');
+    await user.click(screen.getByRole('button', { name: 'Request seller access' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Please complete the following required fields: Email, First name, Last name, Dealership name, Phone.',
+    );
+    expect(api.requestSellerAccess).not.toHaveBeenCalled();
+  });
+
+  it('serves the terms page at /terms', async () => {
+    renderApp('/terms');
+
+    expect(await screen.findByRole('heading', { name: 'Terms & Conditions' })).toBeInTheDocument();
   });
 });

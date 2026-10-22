@@ -16,6 +16,7 @@ import SignIn from './pages/SignIn';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import SubmissionView from './pages/SubmissionView';
+import Terms from './pages/Terms';
 
 function RootRedirect() {
   const { user, initializing } = useAuth();
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/request-access" element={<RequestSellerAccess />} />
+        <Route path="/terms" element={<Terms />} />
         <Route
           path="/change-password"
           element={

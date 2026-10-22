@@ -26,6 +26,8 @@ const userSchema = new Schema(
       lowercase: true,
       trim: true,
     },
+    firstName: { type: String, trim: true },
+    lastName: { type: String, trim: true },
     passwordHash: { type: String, required: true, select: false },
     role: {
       type: String,

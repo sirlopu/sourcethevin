@@ -175,7 +175,7 @@ describe('notifySellerRequestApproved', () => {
         recipientId: 'seller-1',
         type: 'seller_request_approved',
         title: 'Your account was approved',
-        body: 'Your seller account was approved. You can now sign in.',
+        body: 'Your seller account was approved. Check your email for a secure link to create your password.',
       }),
     ]);
     expect(Notification.insertMany).toHaveBeenNthCalledWith(2, [
@@ -183,7 +183,7 @@ describe('notifySellerRequestApproved', () => {
         recipientId: 'admin-1',
         type: 'seller_request_approved',
         title: 'Seller account approved',
-        body: 'seller@example.com was approved. They can now sign in.',
+        body: 'seller@example.com was approved and was emailed a secure link to create a password.',
       }),
     ]);
   });
