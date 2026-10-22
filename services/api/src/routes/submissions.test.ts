@@ -13,7 +13,14 @@ vi.mock('../middleware/requireAuth', () => ({
 }));
 
 vi.mock('../models/Submission', () => ({
-  SUBMISSION_STATUSES: ['new', 'submitted', 'offer_sent', 'accepted', 'declined'],
+  SUBMISSION_STATUSES: [
+    'new',
+    'submitted',
+    'offer_sent',
+    'in_negotiation',
+    'accepted',
+    'declined',
+  ],
   Submission: { findById: findSubmissionById },
 }));
 

@@ -4,7 +4,8 @@ import { RoleShell } from '../components/RoleShell';
 import { ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth-context';
 import { listSubmissions, type SubmissionListItem } from '../lib/desk-api';
-import { statusBadge } from '../lib/submission-status';
+import { statusBadge, SUBMISSION_STATUSES, type SubmissionStatus } from '../lib/submission-status';
+import { vehicleLabel } from '../lib/vehicle-display';
 import { useStartSubmission } from '../lib/useStartSubmission';
 import { deleteSubmission } from '../lib/wizard-api';
 
@@ -15,6 +16,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [submissions, setSubmissions] = useState<SubmissionListItem[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<SubmissionStatus | 'all'>('all');
 
   useEffect(() => {
     let cancelled = false;
@@ -27,6 +29,11 @@ export default function Dashboard() {
       cancelled = true;
     };
   }, [authFetch]);
+
+  const filteredSubmissions =
+    statusFilter === 'all'
+      ? submissions
+      : submissions.filter((submission) => submission.status === statusFilter);
 
   async function handleStart() {
     setStarting(true);
@@ -56,7 +63,7 @@ export default function Dashboard() {
 
   return (
     <RoleShell title="Seller dashboard">
-      <div className="max-w-sm rounded-md bg-gradient-to-br from-blue-400 to-blue-600 p-5 text-white shadow-[0_4px_14px_rgba(10,75,168,.25)]">
+      <div className="max-w-lg rounded-md bg-gradient-to-br from-blue-400 to-blue-600 p-5 text-white shadow-[0_4px_14px_rgba(10,75,168,.25)]">
         <p className="text-xs font-semibold text-blue-100">Start a new</p>
         <p className="font-display text-xl font-bold">Trade-in submission</p>
         <button
@@ -78,15 +85,34 @@ export default function Dashboard() {
 
       {submissions.length > 0 && (
         <div className="mt-8 max-w-lg">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">
-            Recent submissions
-          </p>
-          <div className="divide-y divide-ink-200 rounded-md border border-ink-200 bg-white">
-            {submissions.map((item) => {
-              const vehicle =
-                [item.vehicle.year, item.vehicle.make, item.vehicle.model]
-                  .filter(Boolean)
-                  .join(' ') || 'Untitled trade-in';
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+              Recent submissions
+            </p>
+            <label className="flex items-center gap-2 text-xs font-semibold text-ink-600">
+              Filter by status
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as SubmissionStatus | 'all')}
+                className="rounded-md border-[1.5px] border-ink-300 bg-white px-2.5 py-1.5 text-sm font-normal text-ink-900 outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/15"
+              >
+                <option value="all">All statuses</option>
+                {SUBMISSION_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {statusBadge(status).label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {filteredSubmissions.length === 0 ? (
+            <p className="rounded-md border border-ink-200 bg-white p-4 text-sm text-ink-500">
+              No recent submissions match this status.
+            </p>
+          ) : (
+            <div className="divide-y divide-ink-200 rounded-md border border-ink-200 bg-white">
+              {filteredSubmissions.map((item) => {
+                const vehicle = vehicleLabel(item.vehicle, 'Untitled trade-in');
               const badge = statusBadge(item.status);
               const isDraft = item.status === 'new';
               return (
@@ -124,8 +150,9 @@ export default function Dashboard() {
                   )}
                 </div>
               );
-            })}
-          </div>
+              })}
+            </div>
+          )}
         </div>
       )}
     </RoleShell>

@@ -14,6 +14,7 @@ export const SUBMISSION_STATUSES = [
   'new',
   'submitted',
   'offer_sent',
+  'in_negotiation',
   'accepted',
   'declined',
 ] as const;

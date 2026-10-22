@@ -161,7 +161,7 @@ submissionsRouter.get(
       filter.status = status;
     } else if (req.user!.role !== 'seller') {
       // No explicit status filter: show the full queue across every post-submission status
-      // (submitted, offer_sent, accepted, declined) but never a seller's in-progress draft.
+      // but never a seller's in-progress draft.
       filter.status = { $ne: 'new' };
     }
     if (dateFrom || dateTo) {

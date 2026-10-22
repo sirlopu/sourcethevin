@@ -1,4 +1,12 @@
-export type SubmissionStatus = 'new' | 'submitted' | 'offer_sent' | 'accepted' | 'declined';
+export const SUBMISSION_STATUSES = [
+  'new',
+  'submitted',
+  'offer_sent',
+  'in_negotiation',
+  'accepted',
+  'declined',
+] as const;
+export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
 
 export interface StatusBadgeInfo {
   label: string;
@@ -8,7 +16,8 @@ export interface StatusBadgeInfo {
 const STATUS_BADGES: Record<SubmissionStatus, StatusBadgeInfo> = {
   new: { label: 'Draft', className: 'bg-ink-100 text-ink-600' },
   submitted: { label: 'New', className: 'bg-blue-500/10 text-blue-600' },
-  offer_sent: { label: 'Offer sent', className: 'bg-navy-900 text-white' },
+  offer_sent: { label: 'Offer Received', className: 'bg-navy-900 text-white' },
+  in_negotiation: { label: 'In Negotiation', className: 'bg-warning-bg text-warning' },
   accepted: { label: 'Accepted', className: 'bg-success-bg text-success' },
   declined: { label: 'Declined', className: 'bg-danger-bg text-danger' },
 };

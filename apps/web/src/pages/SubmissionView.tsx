@@ -4,6 +4,7 @@ import MessageThread from '../components/MessageThread';
 import SubmissionNotFound from '../components/SubmissionNotFound';
 import { ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth-context';
+import { vehicleLabel as formatVehicleLabel } from '../lib/vehicle-display';
 import {
   acceptOffer,
   counterOffer,
@@ -16,16 +17,7 @@ import {
 import { getSubmission, type SubmissionRecord } from '../lib/wizard-api';
 
 function vehicleLabel(submission: SubmissionRecord): string {
-  return (
-    [
-      submission.vehicle.year,
-      submission.vehicle.make,
-      submission.vehicle.model,
-      submission.vehicle.trim,
-    ]
-      .filter(Boolean)
-      .join(' ') || 'Vehicle'
-  );
+  return formatVehicleLabel(submission.vehicle);
 }
 
 export default function SubmissionView() {

@@ -197,8 +197,7 @@ offersRouter.post('/:id/counter', requireRole('seller'), async (req: Request, re
     createdBy: req.user!.id,
   });
 
-  // Reopen the trade in the desk's actionable queue for review of the counter.
-  submission.status = 'submitted';
+  submission.status = 'in_negotiation';
   await submission.save();
 
   await AuditLog.create({

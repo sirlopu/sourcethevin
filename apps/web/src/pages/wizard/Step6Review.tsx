@@ -5,6 +5,7 @@ import type { WizardStepProps } from '../../components/wizard/WizardShell';
 import { ApiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
 import { useStartSubmission } from '../../lib/useStartSubmission';
+import { vehicleLabel } from '../../lib/vehicle-display';
 import { submitSubmission } from '../../lib/wizard-api';
 
 export default function Step6Review({ submission, onSaved }: WizardStepProps) {
@@ -17,15 +18,7 @@ export default function Step6Review({ submission, onSaved }: WizardStepProps) {
     return <SubmittedConfirmation submission={submission} />;
   }
 
-  const vehicleHeading =
-    [
-      submission.vehicle.year,
-      submission.vehicle.make,
-      submission.vehicle.model,
-      submission.vehicle.trim,
-    ]
-      .filter(Boolean)
-      .join(' ') || 'Vehicle';
+  const vehicleHeading = vehicleLabel(submission.vehicle);
 
   async function handleSubmit() {
     setSubmitting(true);
@@ -154,15 +147,7 @@ function SubmittedConfirmation({ submission }: { submission: WizardStepProps['su
     }
   }
 
-  const vehicleHeading =
-    [
-      submission.vehicle.year,
-      submission.vehicle.make,
-      submission.vehicle.model,
-      submission.vehicle.trim,
-    ]
-      .filter(Boolean)
-      .join(' ') || 'Vehicle';
+  const vehicleHeading = vehicleLabel(submission.vehicle);
 
   return (
     <div className="text-center">

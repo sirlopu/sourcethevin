@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth-context';
 import { listSubmissions, type SubmissionListItem } from '../lib/desk-api';
 import { formatRelativeAge } from '../lib/relative-time';
 import { statusBadge } from '../lib/submission-status';
+import { vehicleLabel as formatVehicleLabel } from '../lib/vehicle-display';
 
 const DATE_RANGE_OPTIONS = [
   { value: '1', label: 'Last 24 hours' },
@@ -15,11 +16,7 @@ const DATE_RANGE_OPTIONS = [
 ] as const;
 
 function vehicleLabel(item: SubmissionListItem): string {
-  return (
-    [item.vehicle.year, item.vehicle.make, item.vehicle.model, item.vehicle.trim]
-      .filter(Boolean)
-      .join(' ') || 'Vehicle'
-  );
+  return formatVehicleLabel(item.vehicle);
 }
 
 function sellerLabel(item: SubmissionListItem): string {

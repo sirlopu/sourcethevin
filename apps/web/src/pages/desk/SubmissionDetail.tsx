@@ -22,6 +22,7 @@ import {
 } from '../../lib/offers-api';
 import { formatRelativeAge } from '../../lib/relative-time';
 import { statusBadge } from '../../lib/submission-status';
+import { vehicleLabel } from '../../lib/vehicle-display';
 import { photoSlotLabel } from '@sourcethevin/shared';
 import type { SubmissionPhoto } from '../../lib/wizard-api';
 
@@ -81,15 +82,7 @@ export default function SubmissionDetail() {
     );
   }
 
-  const vehicleHeading =
-    [
-      submission.vehicle.year,
-      submission.vehicle.make,
-      submission.vehicle.model,
-      submission.vehicle.trim,
-    ]
-      .filter(Boolean)
-      .join(' ') || 'Vehicle';
+  const vehicleHeading = vehicleLabel(submission.vehicle);
 
   return (
     <main className="mx-auto max-w-5xl p-8">
