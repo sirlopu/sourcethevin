@@ -324,7 +324,7 @@ function OfferPanel({
     try {
       const offer = await declineOffer(authFetch, latestOffer._id);
       setLatestOffer(offer);
-      onStatusChange('submitted');
+      onStatusChange('in_negotiation');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to decline the offer.');
     } finally {

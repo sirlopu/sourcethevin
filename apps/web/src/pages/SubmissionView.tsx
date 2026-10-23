@@ -93,8 +93,8 @@ export default function SubmissionView() {
         {submission.status !== 'accepted' &&
           submission.status !== 'declined' &&
           offer &&
-          offer.status === 'pending' &&
-          offer.createdByRole === 'trade_desk' && (
+          ((offer.status === 'pending' && offer.createdByRole === 'trade_desk') ||
+            (offer.status === 'declined' && offer.createdByRole === 'seller')) && (
             <OfferReviewCard
               submission={submission}
               offer={offer}
@@ -190,7 +190,8 @@ function OfferReviewCard({
   const [counterNotes, setCounterNotes] = useState('');
   const [clock, setClock] = useState(() => Date.now());
   const expiresAt = new Date(offer.expiresAt).getTime();
-  const expired = clock >= expiresAt;
+  const declinedCounter = offer.status === 'declined' && offer.createdByRole === 'seller';
+  const expired = !declinedCounter && clock >= expiresAt;
 
   useEffect(() => {
     // Fire immediately (next tick) if already past expiry so `clock` catches up.
@@ -254,7 +255,11 @@ function OfferReviewCard({
           aria-live="polite"
           className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${expired ? 'bg-red-200 text-red-950' : 'bg-white/10 text-blue-100'}`}
         >
-          {expired ? '!' : '●'} {expired ? 'Offer expired' : 'Awaiting your response'}
+          {declinedCounter
+            ? 'Trade desk declined your counter'
+            : expired
+              ? '! Offer expired'
+              : '● Awaiting your response'}
         </span>
 
         <p className="mt-4 font-mono text-xs text-blue-100">{submission.referenceId}</p>
@@ -283,39 +288,50 @@ function OfferReviewCard({
           </p>
         )}
 
-        {expired ? (
+        {declinedCounter && (
+          <p className="mt-4 rounded-md border border-red-300/40 bg-red-950/40 p-3 text-center text-sm font-semibold text-red-100">
+            The Trade Desk declined your counter. You can propose a new amount while this trade remains open.
+          </p>
+        )}
+        {!declinedCounter && expired && (
           <p className="mt-5 rounded-md border border-red-300/40 bg-red-950/40 p-3 text-center text-sm font-semibold text-red-100">
             This offer has expired. Message the Trade Desk to ask for a new offer.
           </p>
-        ) : (
+        )}
+        {!expired && (
           <>
+            {!declinedCounter && (
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => {
+                  void handleAccept();
+                }}
+                className="mt-5 w-full rounded-md bg-success py-3 font-display font-semibold text-white hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Accept offer
+              </button>
+            )}
             <button
               type="button"
               disabled={submitting}
-              onClick={() => {
-                void handleAccept();
-              }}
-              className="mt-5 w-full rounded-md bg-success py-3 font-display font-semibold text-white hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Accept offer
-            </button>
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={() => {
-                void handleDecline();
-              }}
-              className="mt-2 w-full rounded-md border-[1.5px] border-red-300 py-3 font-display font-semibold text-red-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Decline
-            </button>
-            <button
-              type="button"
               onClick={() => setCounterOpen((open) => !open)}
-              className="mt-2 w-full text-center text-sm font-semibold text-blue-100 hover:underline"
+              className={`${declinedCounter ? 'mt-5' : 'mt-2'} w-full rounded-md border-[1.5px] border-blue-300 bg-white/10 py-3 font-display font-semibold text-blue-100 hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50`}
             >
-              {counterOpen ? 'Cancel counter-offer' : 'Propose a different amount'}
+              {counterOpen ? 'Cancel counter' : 'Counter'}
             </button>
+            {!declinedCounter && (
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => {
+                  void handleDecline();
+                }}
+                className="mt-2 w-full rounded-md border-[1.5px] border-red-300 py-3 font-display font-semibold text-red-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Decline
+              </button>
+            )}
 
             {counterOpen && (
               <div className="mt-3 space-y-2 rounded-md bg-white/10 p-3">
@@ -352,7 +368,7 @@ function OfferReviewCard({
           </>
         )}
 
-        {!expired && (
+        {!expired && !declinedCounter && (
           <p className="mt-4 text-center text-xs text-blue-100">
             Accepting records your name, the date &amp; time, and offer version.
           </p>

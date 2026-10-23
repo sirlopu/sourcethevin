@@ -26,10 +26,12 @@ type LoadResult =
   | { error: 'not_found' | 'not_pending' | 'expired' }
   | { offer: InstanceType<typeof Offer>; submission: InstanceType<typeof Submission> };
 
-/** An offer is only actionable by the seller who owns its submission, or by a trade_desk
- * user in the same tenant, while still pending and unexpired — this is the single gate
- * shared by accept/decline/counter. */
-async function loadActionableOffer(id: string, user: AuthenticatedUser): Promise<LoadResult> {
+/** Validate access and ensure an action targets the current offer version. */
+async function loadActionableOffer(
+  id: string,
+  user: AuthenticatedUser,
+  allowDeclinedSellerCounter = false,
+): Promise<LoadResult> {
   const offer = await Offer.findById(id).catch(() => null);
   if (!offer) {
     return { error: 'not_found' };
@@ -44,6 +46,21 @@ async function loadActionableOffer(id: string, user: AuthenticatedUser): Promise
       : submission.tenantId.toString() === user.tenantId;
   if (!authorized) {
     return { error: 'not_found' };
+  }
+  if (submission.status === 'accepted' || submission.status === 'declined') {
+    return { error: 'not_pending' };
+  }
+  const latestOffer = await Offer.findOne({ submissionId: submission._id }).sort({ version: -1 });
+  if (!latestOffer || latestOffer._id.toString() !== offer._id.toString()) {
+    return { error: 'not_pending' };
+  }
+  if (
+    allowDeclinedSellerCounter &&
+    user.role === 'seller' &&
+    offer.status === 'declined' &&
+    offer.createdByRole === 'seller'
+  ) {
+    return { offer, submission };
   }
   if (offer.status !== 'pending') {
     return { error: 'not_pending' };
@@ -134,9 +151,13 @@ offersRouter.post('/:id/decline', async (req: Request, res: Response) => {
   offer.respondedBy = new Types.ObjectId(req.user!.id);
   await offer.save();
 
-  // A seller declining ends the trade; a trade_desk user declining a seller's counter
-  // just rejects that amount and reopens the trade for further negotiation.
-  submission.status = req.user!.role === 'seller' ? 'declined' : 'submitted';
+  // A seller declining ends the trade; a desk declining a seller counter keeps it in negotiation.
+  submission.status =
+    req.user!.role === 'seller'
+      ? 'declined'
+      : offer.createdByRole === 'seller'
+        ? 'in_negotiation'
+        : 'submitted';
   await submission.save();
 
   await AuditLog.create({
@@ -165,7 +186,7 @@ offersRouter.post('/:id/decline', async (req: Request, res: Response) => {
 });
 
 offersRouter.post('/:id/counter', requireRole('seller'), async (req: Request, res: Response) => {
-  const result = await loadActionableOffer(paramId(req), req.user!);
+  const result = await loadActionableOffer(paramId(req), req.user!, true);
   if ('error' in result) {
     respondToLoadError(res, result.error);
     return;
@@ -179,18 +200,25 @@ offersRouter.post('/:id/counter', requireRole('seller'), async (req: Request, re
   }
   const { amount, notes } = parsed.data;
 
-  offer.status = 'superseded';
-  offer.respondedAt = new Date();
-  offer.respondedBy = new Types.ObjectId(req.user!.id);
-  await offer.save();
+  const recoveringDeclinedCounter = offer.status === 'declined';
+  if (!recoveringDeclinedCounter) {
+    offer.status = 'superseded';
+    offer.respondedAt = new Date();
+    offer.respondedBy = new Types.ObjectId(req.user!.id);
+    await offer.save();
+  }
 
   const nextVersion = (await Offer.countDocuments({ submissionId: submission._id })) + 1;
+  const expiresAt =
+    recoveringDeclinedCounter && offer.expiresAt.getTime() < Date.now()
+      ? new Date(Date.now() + 24 * 60 * 60 * 1000)
+      : offer.expiresAt;
   const counterOffer = await Offer.create({
     submissionId: submission._id,
     tenantId: submission.tenantId,
     version: nextVersion,
     amount,
-    expiresAt: offer.expiresAt,
+    expiresAt,
     notes: notes ?? '',
     status: 'pending',
     createdByRole: 'seller',

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   findOfferById: vi.fn(),
+  findLatestOffer: vi.fn(),
   countOffers: vi.fn(),
   createOffer: vi.fn(),
   findSubmissionById: vi.fn(),
@@ -25,6 +26,7 @@ vi.mock('../middleware/requireRole', () => ({
 vi.mock('../models/Offer', () => ({
   Offer: {
     findById: mocks.findOfferById,
+    findOne: mocks.findLatestOffer,
     countDocuments: mocks.countOffers,
     create: mocks.createOffer,
   },
@@ -88,6 +90,7 @@ function setupOffer() {
     save: vi.fn().mockResolvedValue(undefined),
   };
   mocks.findOfferById.mockResolvedValue(offer);
+  mocks.findLatestOffer.mockReturnValue({ sort: () => Promise.resolve(offer) });
   mocks.findSubmissionById.mockResolvedValue(submission);
   mocks.countOffers.mockResolvedValue(1);
   mocks.createAuditLog.mockResolvedValue(undefined);
@@ -116,7 +119,7 @@ describe('offer negotiation status', () => {
     expect(submission.save).toHaveBeenCalledOnce();
   });
 
-  it('returns to submitted when the desk declines the seller counter', async () => {
+  it('stays in negotiation when the desk declines the seller counter', async () => {
     const { offer, submission } = setupOffer();
     offer.createdByRole = 'seller';
     offer.notes = 'Seller counter';
@@ -126,7 +129,57 @@ describe('offer negotiation status', () => {
 
     expect(response.status).toBe(200);
     expect(offer.status).toBe('declined');
-    expect(submission.status).toBe('submitted');
+    expect(submission.status).toBe('in_negotiation');
     expect(submission.save).toHaveBeenCalledOnce();
+  });
+
+  it('allows another seller counter after desk decline, even when the declined offer expired', async () => {
+    const { offer, submission } = setupOffer();
+    offer.createdByRole = 'seller';
+    offer.status = 'declined';
+    offer.expiresAt = new Date('2000-01-01T00:00:00.000Z');
+    submission.status = 'submitted';
+    mocks.createOffer.mockImplementation(async (input) => ({ ...input, _id: 'counter-2' }));
+
+    const response = await request(createTestApp('seller'))
+      .post('/offers/offer-1/counter')
+      .send({ amount: 12000 });
+
+    expect(response.status).toBe(201);
+    expect(offer.status).toBe('declined');
+    expect(offer.save).not.toHaveBeenCalled();
+    expect(mocks.createOffer).toHaveBeenCalledWith(
+      expect.objectContaining({ version: 2, status: 'pending', createdByRole: 'seller' }),
+    );
+    expect(new Date(response.body.expiresAt).getTime()).toBeGreaterThan(Date.now());
+    expect(submission.status).toBe('in_negotiation');
+  });
+
+  it('rejects counters after the desk explicitly closes the submission', async () => {
+    const { offer, submission } = setupOffer();
+    offer.createdByRole = 'seller';
+    offer.status = 'declined';
+    submission.status = 'declined';
+
+    const response = await request(createTestApp('seller'))
+      .post('/offers/offer-1/counter')
+      .send({ amount: 12000 });
+
+    expect(response.status).toBe(409);
+    expect(mocks.createOffer).not.toHaveBeenCalled();
+  });
+
+  it('rejects a counter against a stale offer version', async () => {
+    const { offer } = setupOffer();
+    mocks.findLatestOffer.mockReturnValue({
+      sort: () => Promise.resolve({ ...offer, _id: 'newer-offer', version: 2 }),
+    });
+
+    const response = await request(createTestApp('seller'))
+      .post('/offers/offer-1/counter')
+      .send({ amount: 12000 });
+
+    expect(response.status).toBe(409);
+    expect(mocks.createOffer).not.toHaveBeenCalled();
   });
 });

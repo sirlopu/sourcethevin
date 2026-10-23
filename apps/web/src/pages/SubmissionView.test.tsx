@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../lib/api';
@@ -102,7 +103,7 @@ describe('SubmissionView offer expiry', () => {
     expect(screen.queryByRole('button', { name: 'Accept offer' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: 'Propose a different amount' }),
+      screen.queryByRole('button', { name: 'Counter' }),
     ).not.toBeInTheDocument();
   });
 
@@ -113,7 +114,25 @@ describe('SubmissionView offer expiry', () => {
     expect(await screen.findByText(/Awaiting your response/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Accept offer' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Decline' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Propose a different amount' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Counter' })).toBeInTheDocument();
+    const actions = screen.getAllByRole('button');
+    expect(actions.slice(0, 3).map((button) => button.textContent)).toEqual([
+      'Accept offer',
+      'Counter',
+      'Decline',
+    ]);
+  });
+
+  it('opens the counter form from the Counter button', async () => {
+    mocks.getLatestOffer.mockResolvedValue(offer(new Date(Date.now() + 60_000).toISOString()));
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Counter' }));
+
+    expect(screen.getByLabelText('Your counter amount')).toBeInTheDocument();
+    expect(screen.getByLabelText('Note (optional)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel counter' })).toBeInTheDocument();
   });
 
   it('removes response controls when an offer expires while the page is open', async () => {
@@ -125,7 +144,38 @@ describe('SubmissionView offer expiry', () => {
     expect(screen.queryByRole('button', { name: 'Accept offer' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: 'Propose a different amount' }),
+      screen.queryByRole('button', { name: 'Counter' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('allows a new counter after the desk declines a seller counter, even after expiry', async () => {
+    mocks.getSubmission.mockResolvedValue({ ...submission, status: 'submitted' });
+    mocks.getLatestOffer.mockResolvedValue({
+      ...offer('2000-01-01T00:00:00.000Z'),
+      status: 'declined',
+      createdByRole: 'seller',
+    });
+    renderPage();
+
+    expect(await screen.findByText('Trade desk declined your counter')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Counter' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Accept offer' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('This offer has expired. Message the Trade Desk to ask for a new offer.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not show counter controls after the submission is closed', async () => {
+    mocks.getSubmission.mockResolvedValue({ ...submission, status: 'declined' });
+    mocks.getLatestOffer.mockResolvedValue({
+      ...offer(new Date(Date.now() + 60_000).toISOString()),
+      status: 'declined',
+      createdByRole: 'seller',
+    });
+    renderPage();
+
+    expect(await screen.findByText('Trade declined')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Counter' })).not.toBeInTheDocument();
   });
 });
