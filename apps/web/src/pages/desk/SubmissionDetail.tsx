@@ -162,77 +162,87 @@ export default function SubmissionDetail() {
         </div>
       )}
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="space-y-6">
-          <Card title="Vehicle & condition">
-            <Row label="Mileage" value={submission.vehicle.mileage?.toLocaleString() ?? '—'} />
-            <Row
-              label="Drivetrain"
-              value={
-                [submission.vehicle.drivetrain, submission.vehicle.engine]
-                  .filter(Boolean)
-                  .join(' · ') || '—'
-              }
-            />
-            <Row label="Runs & drives" value={submission.condition.runsAndDrives ?? '—'} />
-            <Row label="Warning lights" value={submission.condition.warningLights ?? '—'} />
-            <Row label="Structural" value={submission.condition.accidentHistory ?? '—'} />
-            <Row
-              label="Cosmetic"
-              value={submission.condition.cosmeticIssues.join(', ') || 'None reported'}
-            />
-            <Row label="Tires" value={submission.condition.tireCondition ?? '—'} />
-            <Row label="Windshield" value={submission.condition.windshieldCondition ?? '—'} />
-          </Card>
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+        <div className="contents lg:col-start-2 lg:row-start-1 lg:flex lg:flex-col lg:gap-6">
+          <div className="order-1 lg:order-none">
+            <Card title="Vehicle & condition">
+              <Row label="Mileage" value={submission.vehicle.mileage?.toLocaleString() ?? '—'} />
+              <Row
+                label="Drivetrain"
+                value={
+                  [submission.vehicle.drivetrain, submission.vehicle.engine]
+                    .filter(Boolean)
+                    .join(' · ') || '—'
+                }
+              />
+              <Row label="Runs & drives" value={submission.condition.runsAndDrives ?? '—'} />
+              <Row label="Warning lights" value={submission.condition.warningLights ?? '—'} />
+              <Row label="Structural" value={submission.condition.accidentHistory ?? '—'} />
+              <Row
+                label="Cosmetic"
+                value={submission.condition.cosmeticIssues.join(', ') || 'None reported'}
+              />
+              <Row label="Tires" value={submission.condition.tireCondition ?? '—'} />
+              <Row label="Windshield" value={submission.condition.windshieldCondition ?? '—'} />
+            </Card>
+          </div>
 
-          <Card title="Trade & payoff">
-            <Row
-              label="Lien payoff"
-              value={
-                submission.payoff.payoffAmount != null
-                  ? `$${submission.payoff.payoffAmount.toLocaleString()}${submission.payoff.lienHolder ? ` · ${submission.payoff.lienHolder}` : ''}`
-                  : '—'
-              }
-            />
-            <Row label="Title" value={submission.payoff.titleStatus ?? '—'} />
-            {submission.payoff.sellerNotes && (
-              <p className="mt-2 rounded-md bg-ink-50 p-3 text-sm text-ink-700">
-                <span className="font-semibold">Seller note: </span>
-                {submission.payoff.sellerNotes}
-              </p>
-            )}
-          </Card>
+          <div className="order-2 lg:order-none">
+            <Card title="Trade & payoff">
+              <Row
+                label="Lien payoff"
+                value={
+                  submission.payoff.payoffAmount != null
+                    ? `$${submission.payoff.payoffAmount.toLocaleString()}${submission.payoff.lienHolder ? ` · ${submission.payoff.lienHolder}` : ''}`
+                    : '—'
+                }
+              />
+              <Row label="Title" value={submission.payoff.titleStatus ?? '—'} />
+              {submission.payoff.sellerNotes && (
+                <p className="mt-2 rounded-md bg-ink-50 p-3 text-sm text-ink-700">
+                  <span className="font-semibold">Seller note: </span>
+                  {submission.payoff.sellerNotes}
+                </p>
+              )}
+            </Card>
+          </div>
 
           {submission.valuation !== undefined && (
-            <InternalNotesCard
-              submissionId={id}
-              authFetch={authFetch}
-              valuation={submission.valuation}
-            />
+            <div className="order-5 lg:order-none">
+              <OfferPanel
+                submissionId={id}
+                authFetch={authFetch}
+                submissionStatus={submission.status}
+                onStatusChange={(status) =>
+                  setSubmission((prev) => (prev ? { ...prev, status } : prev))
+                }
+              />
+            </div>
           )}
+
+          <div className="order-6 lg:order-none">
+            <MessageThread submissionId={id} currentUserRole="trade_desk" />
+          </div>
         </div>
 
         {submission.valuation !== undefined && (
-          <div className="space-y-6">
-            <ValuationWorkspacePanel
-              submissionId={id}
-              authFetch={authFetch}
-              initial={submission.valuation}
-            />
-            <OfferPanel
-              submissionId={id}
-              authFetch={authFetch}
-              submissionStatus={submission.status}
-              onStatusChange={(status) =>
-                setSubmission((prev) => (prev ? { ...prev, status } : prev))
-              }
-            />
+          <div className="contents lg:col-start-1 lg:row-start-1 lg:flex lg:flex-col lg:gap-6">
+            <div className="order-4 lg:order-none">
+              <ValuationWorkspacePanel
+                submissionId={id}
+                authFetch={authFetch}
+                initial={submission.valuation}
+              />
+            </div>
+            <div className="order-3 lg:order-none">
+              <InternalNotesCard
+                submissionId={id}
+                authFetch={authFetch}
+                valuation={submission.valuation}
+              />
+            </div>
           </div>
         )}
-      </div>
-
-      <div className="mt-6">
-        <MessageThread submissionId={id} currentUserRole="trade_desk" />
       </div>
     </main>
   );
