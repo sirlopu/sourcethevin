@@ -7,7 +7,6 @@ import {
   appendInternalNote,
   declineSubmission,
   getSubmissionDetail,
-  overrideValuation,
   saveValuation,
   type BidReference,
   type EstimatedExpenses,
@@ -240,7 +239,7 @@ export default function SubmissionDetail() {
 }
 
 function defaultExpiryLocal(): string {
-  const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
@@ -599,20 +598,15 @@ function ValuationWorkspacePanel({
   initial: SubmissionListItem['valuation'];
 }) {
   const [bidReferences, setBidReferences] = useState<BidReference[]>(initial?.bidReferences ?? []);
-  const [newSource, setNewSource] = useState('');
+  const [newSource, setNewSource] = useState('MMR');
   const [newAmount, setNewAmount] = useState('');
   const [expenses, setExpenses] = useState<EstimatedExpenses>(
     initial?.estimatedExpenses ?? EMPTY_EXPENSES,
   );
   const [targetMargin, setTargetMargin] = useState(String(initial?.targetMargin ?? 0));
   const [recommendedMax, setRecommendedMax] = useState(initial?.recommendedMaxAcquisition ?? 0);
-  const [buyerOverride, setBuyerOverride] = useState(initial?.buyerOverride ?? null);
-  const [overrideAmount, setOverrideAmount] = useState('');
-  const [overrideReason, setOverrideReason] = useState('');
   const [saving, setSaving] = useState(false);
-  const [overriding, setOverriding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [overrideError, setOverrideError] = useState<string | null>(null);
 
   function addBidReference() {
     const amount = Number(newAmount);
@@ -639,7 +633,12 @@ function ValuationWorkspacePanel({
           amount: b.amount,
           loggedAt: b.loggedAt,
         })),
-        estimatedExpenses: expenses,
+        estimatedExpenses: {
+          transport: expenses.transport,
+          recon: expenses.recon,
+          arbitrationCondition: expenses.arbitrationCondition ?? 0,
+          other: expenses.other,
+        },
         targetMargin: Number(targetMargin) || 0,
       });
       setRecommendedMax(updated.recommendedMaxAcquisition);
@@ -648,33 +647,6 @@ function ValuationWorkspacePanel({
       setError(err instanceof ApiError ? err.message : 'Unable to save the valuation.');
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function handleOverride() {
-    setOverrideError(null);
-    const amount = Number(overrideAmount);
-    if (!Number.isFinite(amount) || amount < 0) {
-      setOverrideError('Enter a valid override amount.');
-      return;
-    }
-    if (!overrideReason.trim()) {
-      setOverrideError('An override reason is required.');
-      return;
-    }
-    setOverriding(true);
-    try {
-      const updated = await overrideValuation(authFetch, submissionId, {
-        amount,
-        reason: overrideReason.trim(),
-      });
-      setBuyerOverride(updated.buyerOverride);
-      setOverrideAmount('');
-      setOverrideReason('');
-    } catch (err) {
-      setOverrideError(err instanceof ApiError ? err.message : 'Unable to log the override.');
-    } finally {
-      setOverriding(false);
     }
   }
 
@@ -714,27 +686,35 @@ function ValuationWorkspacePanel({
           <p className="text-sm text-ink-500">No bid references yet.</p>
         )}
       </div>
-      <div className="mt-2 flex gap-2">
-        <input
-          placeholder="Source"
-          value={newSource}
-          onChange={(event) => setNewSource(event.target.value)}
-          className="min-w-0 flex-1 rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
-        />
-        <input
-          placeholder="$"
-          type="number"
-          value={newAmount}
-          onChange={(event) => setNewAmount(event.target.value)}
-          className="w-24 rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
-        />
-        <button
-          type="button"
-          onClick={addBidReference}
-          className="rounded-md border-[1.5px] border-navy-900 px-3 py-1.5 text-sm font-semibold text-navy-900 hover:bg-ink-50"
-        >
-          + Add
-        </button>
+      <div className="mt-2 flex flex-col gap-2">
+        <span className="text-xs text-ink-500">Bid Reference</span>
+        <div className="flex gap-2">
+          <select
+            value={newSource}
+            onChange={(e) => setNewSource(e.target.value)}
+            className="mt-1 w-48 rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
+          >
+            <option value="" disabled>Select</option>
+            <option value="MMR">MMR</option>
+            <option value="KBB">KBB</option>
+            <option value="CarMax">CarMax</option>
+            <option value="Other">Other</option>
+          </select>
+          <input
+            placeholder="$"
+            type="number"
+            value={newAmount}
+            onChange={(event) => setNewAmount(event.target.value)}
+            className="min-w-0 flex-1 rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
+          />
+          <button
+            type="button"
+            onClick={addBidReference}
+            className="rounded-md border-[1.5px] border-navy-900 px-3 py-1.5 text-sm font-semibold text-navy-900 hover:bg-ink-50"
+          >
+            + Add
+          </button>
+        </div>
       </div>
 
       <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-ink-500">
@@ -751,13 +731,7 @@ function ValuationWorkspacePanel({
           value={expenses.recon}
           onChange={(v) => setExpenses((c) => ({ ...c, recon: v }))}
         />
-        <ExpenseField
-          label="Arbitration / condition"
-          value={expenses.arbitrationCondition}
-          onChange={(v) => setExpenses((c) => ({ ...c, arbitrationCondition: v }))}
-        />
-        <ExpenseField
-          label="Other"
+        <ExpenseField className="col-span-2" label="Other"
           value={expenses.other}
           onChange={(v) => setExpenses((c) => ({ ...c, other: v }))}
         />
@@ -793,7 +767,7 @@ function ValuationWorkspacePanel({
 
       <div className="mt-4 rounded-md bg-gradient-to-br from-navy-700 to-navy-900 p-4 text-white">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-100">
-          Recommended max acquisition
+          Recommended Bid
         </p>
         <p className="mt-1 font-display text-2xl font-extrabold italic">
           ${recommendedMax.toLocaleString()}
@@ -806,54 +780,6 @@ function ValuationWorkspacePanel({
           {(Number(targetMargin) || 0).toLocaleString()} margin
         </p>
       </div>
-
-      <label className="mt-4 block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-          Buyer override
-        </span>
-        <input
-          type="number"
-          placeholder={buyerOverride ? `Current: $${buyerOverride.amount.toLocaleString()}` : '$'}
-          value={overrideAmount}
-          onChange={(event) => setOverrideAmount(event.target.value)}
-          className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
-        />
-      </label>
-      <label className="mt-2 block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-          Override reason *
-        </span>
-        <textarea
-          rows={2}
-          value={overrideReason}
-          onChange={(event) => setOverrideReason(event.target.value)}
-          className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
-        />
-      </label>
-      <p className="mt-1 text-xs text-ink-500">
-        Logged to the audit trail with your name and time.
-      </p>
-      {overrideError && (
-        <p role="alert" className="mt-1 text-sm font-medium text-danger">
-          {overrideError}
-        </p>
-      )}
-      <button
-        type="button"
-        disabled={overriding}
-        onClick={() => {
-          void handleOverride();
-        }}
-        className="mt-2 w-full rounded-md border-[1.5px] border-navy-900 py-2 text-sm font-semibold text-navy-900 hover:bg-ink-50 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {overriding ? 'Logging…' : 'Log override'}
-      </button>
-      {buyerOverride && (
-        <p className="mt-2 text-xs text-ink-500">
-          Last override: ${buyerOverride.amount.toLocaleString()} by{' '}
-          {formatRelativeAge(buyerOverride.loggedAt)} ago — &ldquo;{buyerOverride.reason}&rdquo;
-        </p>
-      )}
     </div>
   );
 }
@@ -862,19 +788,26 @@ function ExpenseField({
   label,
   value,
   onChange,
+  className,
 }: {
   label: string;
   value: number;
   onChange: (value: number) => void;
+  className?: string;
 }) {
   return (
-    <label className="block">
+    <label className={`block ${className ?? ''}`}>
       <span className="text-xs text-ink-500">{label}</span>
       <input
-        type="number"
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value) || 0)}
-        className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={value === 0 ? '0' : value}
+        onChange={(e) => {
+          const v = e.target.value.replace(/[^0-9]/g, '');
+          onChange(v === '' ? 0 : Number(v));
+        }}
+        className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
     </label>
   );
