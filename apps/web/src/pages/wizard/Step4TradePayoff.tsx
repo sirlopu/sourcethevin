@@ -14,10 +14,9 @@ type TitleStatus = NonNullable<Payoff['titleStatus']>;
 export default function Step4TradePayoff({ submission, onSaved, onContinue }: WizardStepProps) {
   const { authFetch } = useAuth();
   const p = submission.payoff;
-  const [expectedAllowance, setExpectedAllowance] = useState(p.expectedAllowance?.toString() ?? '');
   const [lienStatus, setLienStatus] = useState<LienStatus>(p.lienStatus ?? 'none');
   const [payoffAmount, setPayoffAmount] = useState(p.payoffAmount?.toString() ?? '');
-  const [titleStatus, setTitleStatus] = useState<TitleStatus>(p.titleStatus ?? 'in_hand');
+  const [titleStatus, setTitleStatus] = useState<TitleStatus>(p.titleStatus ?? 'with_lienholder');
   const [lienHolder, setLienHolder] = useState(p.lienHolder ?? '');
   const [sellerNotes, setSellerNotes] = useState(p.sellerNotes ?? '');
   const [submitting, setSubmitting] = useState(false);
@@ -25,7 +24,6 @@ export default function Step4TradePayoff({ submission, onSaved, onContinue }: Wi
 
   const payoffPatch = {
     payoff: {
-      expectedAllowance: expectedAllowance ? Number(expectedAllowance) : null,
       lienStatus,
       payoffAmount: payoffAmount ? Number(payoffAmount) : null,
       titleStatus,
@@ -57,15 +55,6 @@ export default function Step4TradePayoff({ submission, onSaved, onContinue }: Wi
     <form onSubmit={handleContinue} noValidate className="space-y-4">
       <h2 className="font-display text-2xl font-bold text-navy-900">Trade &amp; payoff</h2>
 
-      <WizardField
-        label="Customer's expected allowance"
-        name="expectedAllowance"
-        type="number"
-        placeholder="$"
-        value={expectedAllowance}
-        onChange={(e) => setExpectedAllowance(e.target.value)}
-      />
-
       <div className="grid grid-cols-2 gap-4">
         <WizardSelect
           label="Lien / payoff status"
@@ -93,9 +82,8 @@ export default function Step4TradePayoff({ submission, onSaved, onContinue }: Wi
           value={titleStatus}
           onChange={(e) => setTitleStatus(e.target.value as TitleStatus)}
         >
-          <option value="in_hand">In hand</option>
           <option value="with_lienholder">With lienholder</option>
-          <option value="lost">Lost / duplicate needed</option>
+          <option value="lost">Lost</option>
         </WizardSelect>
         <WizardField
           label="Lienholder"

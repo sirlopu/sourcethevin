@@ -188,14 +188,6 @@ export default function SubmissionDetail() {
 
           <Card title="Trade & payoff">
             <Row
-              label="Customer expectation"
-              value={
-                submission.payoff.expectedAllowance != null
-                  ? `$${submission.payoff.expectedAllowance.toLocaleString()}`
-                  : '—'
-              }
-            />
-            <Row
               label="Lien payoff"
               value={
                 submission.payoff.payoffAmount != null

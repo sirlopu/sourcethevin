@@ -64,14 +64,6 @@ export default function Step6Review({ submission, onSaved }: WizardStepProps) {
         </SummaryCard>
 
         <SummaryCard title="Trade & payoff">
-          <SummaryRow
-            label="Expected allowance"
-            value={
-              submission.payoff.expectedAllowance != null
-                ? `$${submission.payoff.expectedAllowance.toLocaleString()}`
-                : '—'
-            }
-          />
           <SummaryRow label="Lien status" value={submission.payoff.lienStatus ?? '—'} />
         </SummaryCard>
 

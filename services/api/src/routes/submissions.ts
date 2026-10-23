@@ -1,7 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import {
-  MIN_REQUIRED_PHOTOS,
   internalNoteInputSchema,
   messageCreateInputSchema,
   offerCreateInputSchema,
@@ -337,19 +336,15 @@ submissionsRouter.post(
       res.status(404).json({ error: 'Submission not found' });
       return;
     }
-    if (submission.status !== 'new') {
-      res.status(409).json({ error: 'This submission has already been submitted' });
-      return;
-    }
-    if (submission.photos.length < MIN_REQUIRED_PHOTOS) {
-      res.status(400).json({ error: `At least ${MIN_REQUIRED_PHOTOS} photos are required` });
-      return;
-    }
+  if (submission.status !== 'new') {
+    res.status(409).json({ error: 'This submission has already been submitted' });
+    return;
+  }
 
-    submission.status = 'submitted';
-    submission.currentStep = 6;
-    submission.submittedAt = new Date();
-    await submission.save();
+  submission.status = 'submitted';
+  submission.currentStep = 6;
+  submission.submittedAt = new Date();
+  await submission.save();
 
     await AuditLog.create({
       tenantId: submission.tenantId,

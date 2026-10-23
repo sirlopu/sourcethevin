@@ -25,7 +25,7 @@ export type VehicleInfo = z.infer<typeof vehicleInfoSchema>;
 export const RUNS_AND_DRIVES_OPTIONS = ['yes', 'starts_only', 'no'] as const;
 export const runsAndDrivesSchema = z.enum(RUNS_AND_DRIVES_OPTIONS);
 
-export const WARNING_LIGHTS_OPTIONS = ['none', 'check_engine', 'other'] as const;
+export const WARNING_LIGHTS_OPTIONS = ['none', 'check_engine', 'abs', 'airbags', 'other'] as const;
 export const warningLightsSchema = z.enum(WARNING_LIGHTS_OPTIONS);
 
 export const ACCIDENT_HISTORY_OPTIONS = ['clean', 'repaired', 'unrepaired'] as const;
@@ -58,11 +58,10 @@ export type Condition = z.infer<typeof conditionSchema>;
 export const LIEN_STATUS_OPTIONS = ['none', 'active_lien'] as const;
 export const lienStatusSchema = z.enum(LIEN_STATUS_OPTIONS);
 
-export const TITLE_STATUS_OPTIONS = ['in_hand', 'with_lienholder', 'lost'] as const;
+export const TITLE_STATUS_OPTIONS = ['with_lienholder', 'lost'] as const;
 export const titleStatusSchema = z.enum(TITLE_STATUS_OPTIONS);
 
 export const payoffSchema = z.object({
-  expectedAllowance: z.number().gte(0).nullable(),
   lienStatus: lienStatusSchema.nullable(),
   payoffAmount: z.number().gte(0).nullable(),
   titleStatus: titleStatusSchema.nullable(),
@@ -92,7 +91,7 @@ export const PHOTO_SLOT_KEYS = PHOTO_SLOTS.map((slot) => slot.key) as [string, .
 export const photoSlotSchema = z.enum(PHOTO_SLOT_KEYS);
 export type PhotoSlot = z.infer<typeof photoSlotSchema>;
 
-export const MIN_REQUIRED_PHOTOS = 6;
+export const MIN_REQUIRED_PHOTOS = 0;
 
 export function photoSlotLabel(slot: string): string {
   return PHOTO_SLOTS.find((s) => s.key === slot)?.label ?? slot;

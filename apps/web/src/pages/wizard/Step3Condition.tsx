@@ -103,7 +103,9 @@ export default function Step3Condition({ submission, onSaved, onContinue }: Wiza
           onChange={setWarningLights}
           options={[
             { value: 'none', label: 'None' },
-            { value: 'check_engine', label: 'Check engine', tone: 'warning' },
+            { value: 'check_engine', label: 'Engine Light' },
+            { value: 'abs', label: 'ABS' },
+            { value: 'airbags', label: 'Airbags' },
             { value: 'other', label: 'Other' },
           ]}
         />
@@ -119,7 +121,7 @@ export default function Step3Condition({ submission, onSaved, onContinue }: Wiza
       </div>
 
       <WizardSelect
-        label="Structural / accident history"
+        label="Accident history"
         name="accidentHistory"
         value={accidentHistory}
         onChange={(e) => setAccidentHistory(e.target.value as AccidentHistory)}
