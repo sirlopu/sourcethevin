@@ -485,6 +485,11 @@ function OfferPanel({
           >
             End negotiation
           </button>
+          <p className="text-center text-[11px] text-ink-400">
+            <Link to="/terms" className="hover:underline">
+              Terms & Conditions
+            </Link>
+          </p>
         </div>
       )}
     </div>

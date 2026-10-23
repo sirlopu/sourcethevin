@@ -55,7 +55,7 @@ export default function MessageThread({
 
   return (
     <div className="rounded-xl bg-white p-6 shadow-[0_12px_32px_rgba(10,31,82,.14)]">
-      <h2 className="font-display text-lg font-bold text-navy-900">Messages</h2>
+      <h2 className="font-display text-lg font-bold text-navy-900">External Messages to Seller</h2>
       <p className="text-xs text-ink-500">Kept as history for this trade only.</p>
 
       {error && (
