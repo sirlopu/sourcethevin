@@ -591,6 +591,9 @@ function InternalNotesCard({
             .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
             .map((note, index) => (
               <article key={`${note.createdAt}-${index}`} className="rounded-md bg-ink-50 p-3">
+                <p className="text-xs font-semibold text-ink-700">
+                  {internalNoteAuthorLabel(note)}
+                </p>
                 <time dateTime={note.createdAt} className="text-xs font-semibold text-ink-700">
                   {new Date(note.createdAt).toLocaleString()}
                 </time>
@@ -601,6 +604,17 @@ function InternalNotesCard({
       </div>
     </div>
   );
+}
+
+function internalNoteAuthorLabel(note: {
+  authorFirstName?: string;
+  authorLastName?: string;
+  authorEmail?: string;
+}): string {
+  const firstName = note.authorFirstName?.trim();
+  const lastName = note.authorLastName?.trim();
+  if (firstName && lastName) return `${firstName} ${lastName[0]}.`;
+  return note.authorEmail?.trim() || 'Unknown user';
 }
 
 function ValuationWorkspacePanel({

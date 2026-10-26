@@ -26,6 +26,9 @@ export interface BuyerOverride {
 export interface InternalNoteHistoryItem {
   text: string;
   createdAt: string;
+  authorFirstName?: string;
+  authorLastName?: string;
+  authorEmail?: string;
 }
 
 export interface ValuationRecord {

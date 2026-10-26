@@ -100,6 +100,8 @@ describe('requireAuth', () => {
     vi.mocked(User.findById).mockResolvedValue({
       _id: { toString: () => 'user-1' },
       email: 'seller@example.com',
+      firstName: 'Seller',
+      lastName: 'Person',
       role: 'seller',
       tenantId: { toString: () => 'tenant-1' },
       status: 'active',
@@ -115,6 +117,8 @@ describe('requireAuth', () => {
     expect(req.user).toEqual({
       id: 'user-1',
       email: 'seller@example.com',
+      firstName: 'Seller',
+      lastName: 'Person',
       role: 'seller',
       tenantId: 'tenant-1',
       status: 'active',

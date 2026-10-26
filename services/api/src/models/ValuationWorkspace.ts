@@ -33,6 +33,9 @@ const internalNoteSchema = new Schema(
   {
     text: { type: String, required: true },
     createdAt: { type: Date, required: true, default: Date.now },
+    authorFirstName: { type: String, trim: true },
+    authorLastName: { type: String, trim: true },
+    authorEmail: { type: String, trim: true },
   },
   { _id: false },
 );

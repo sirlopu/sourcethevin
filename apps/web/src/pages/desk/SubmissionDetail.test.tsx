@@ -56,7 +56,13 @@ const submission: SubmissionListItem = {
     recommendedMaxAcquisition: 0,
     buyerOverride: null,
     internalNoteHistory: [
-      { text: 'Older note', createdAt: '2026-10-01T12:00:00.000Z' },
+      {
+        text: 'Older note',
+        createdAt: '2026-10-01T12:00:00.000Z',
+        authorFirstName: 'Morgan',
+        authorLastName: 'Lee',
+        authorEmail: 'morgan@example.com',
+      },
       { text: 'Latest existing note', createdAt: '2026-10-02T12:00:00.000Z' },
     ],
   },
@@ -92,7 +98,13 @@ beforeEach(() => {
   mocks.appendInternalNote.mockResolvedValue({
     ...submission.valuation,
     internalNoteHistory: [
-      { text: 'New saved note', createdAt: '2026-10-03T12:00:00.000Z' },
+      {
+        text: 'New saved note',
+        createdAt: '2026-10-03T12:00:00.000Z',
+        authorFirstName: 'Jordan',
+        authorLastName: 'Doe',
+        authorEmail: 'jordan@example.com',
+      },
       ...(submission.valuation?.internalNoteHistory ?? []),
     ],
   });
@@ -108,6 +120,8 @@ describe('SubmissionDetail internal notes', () => {
     const savedNotes = screen.getByRole('group', { name: 'Saved notes' });
     expect(within(savedNotes).getByText('Latest existing note')).toBeInTheDocument();
     expect(within(savedNotes).getByText('Older note')).toBeInTheDocument();
+    expect(within(savedNotes).getByText('Morgan L.')).toBeInTheDocument();
+    expect(within(savedNotes).getByText('Unknown user')).toBeInTheDocument();
     expect(editor).toHaveValue('');
     const saveButton = screen.getByRole('button', { name: 'Save notes' });
     expect(
@@ -125,12 +139,35 @@ describe('SubmissionDetail internal notes', () => {
     await user.click(screen.getByRole('button', { name: 'Save notes' }));
 
     expect(await within(savedNotes).findByText('New saved note')).toBeInTheDocument();
+    expect(within(savedNotes).getByText('Jordan D.')).toBeInTheDocument();
     expect(editor).toHaveValue('');
     expect(mocks.appendInternalNote).toHaveBeenCalledWith(
       mocks.authFetch,
       'submission-1',
       'New saved note',
     );
+  });
+
+  it('falls back to the author email when a complete name is unavailable', async () => {
+    mocks.getSubmissionDetail.mockResolvedValueOnce({
+      ...submission,
+      valuation: {
+        ...submission.valuation!,
+        internalNoteHistory: [
+          {
+            text: 'Email author note',
+            createdAt: '2026-10-03T12:00:00.000Z',
+            authorFirstName: 'Jordan',
+            authorEmail: 'jordan@example.com',
+          },
+        ],
+      },
+    });
+    renderPage();
+
+    const savedNotes = await screen.findByRole('group', { name: 'Saved notes' });
+    expect(await within(savedNotes).findByText('jordan@example.com')).toBeInTheDocument();
+    expect(within(savedNotes).queryByText('Jordan')).not.toBeInTheDocument();
   });
 
   it('keeps the draft and existing history visible when saving fails', async () => {

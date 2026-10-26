@@ -5,6 +5,8 @@ import { User, type UserRole, type UserStatus } from '../models/User';
 export interface AuthenticatedUser {
   id: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
   role: UserRole;
   tenantId: string;
   status: UserStatus;
@@ -50,6 +52,8 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   req.user = {
     id: user._id.toString(),
     email: user.email,
+    firstName: user.firstName ?? undefined,
+    lastName: user.lastName ?? undefined,
     role: user.role,
     tenantId: user.tenantId.toString(),
     status: user.status,

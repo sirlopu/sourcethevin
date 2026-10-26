@@ -421,7 +421,15 @@ submissionsRouter.post(
         $setOnInsert: { submissionId: submission._id, tenantId: submission.tenantId },
         $push: {
           internalNoteHistory: {
-            $each: [{ text: parsed.data.text, createdAt: new Date() }],
+            $each: [
+              {
+                text: parsed.data.text,
+                createdAt: new Date(),
+                authorFirstName: req.user!.firstName,
+                authorLastName: req.user!.lastName,
+                authorEmail: req.user!.email,
+              },
+            ],
             $sort: { createdAt: -1 },
           },
         },
