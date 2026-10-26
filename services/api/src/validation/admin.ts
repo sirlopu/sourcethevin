@@ -8,6 +8,8 @@ const optionalTrimmedString = z.preprocess(
 
 export const inviteUserSchema = z
   .object({
+    firstName: z.string().trim().min(1),
+    lastName: z.string().trim().min(1),
     email: z.string().trim().toLowerCase().email(),
     role: z.enum(USER_ROLES),
     dealership: z

@@ -11,6 +11,8 @@ export interface AdminDealership {
 
 export interface AdminUserRecord {
   id: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   role: Role;
   status: 'pending' | 'active' | 'suspended';
@@ -38,6 +40,8 @@ export function listAdminUsers(authFetch: AuthFetch) {
 }
 
 export interface InviteUserInput {
+  firstName: string;
+  lastName: string;
   email: string;
   role: Role;
   dealership?: AdminDealership;
