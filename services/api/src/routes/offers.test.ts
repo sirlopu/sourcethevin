@@ -182,4 +182,59 @@ describe('offer negotiation status', () => {
     expect(response.status).toBe(409);
     expect(mocks.createOffer).not.toHaveBeenCalled();
   });
+
+  it('sets in_negotiation (not declined) when a seller declines a desk offer', async () => {
+    const { offer, submission } = setupOffer();
+
+    const response = await request(createTestApp('seller'))
+      .post('/offers/offer-1/decline');
+
+    expect(response.status).toBe(200);
+    expect(offer.status).toBe('declined');
+    expect(submission.status).toBe('in_negotiation');
+    expect(submission.save).toHaveBeenCalledOnce();
+  });
+
+  it('allows a seller to counter a declined desk offer, keeping negotiation open', async () => {
+    const { offer, submission } = setupOffer();
+    offer.createdByRole = 'trade_desk';
+    offer.status = 'declined';
+    submission.status = 'in_negotiation';
+    mocks.createOffer.mockImplementation(async (input) => ({ ...input, _id: 'counter-2' }));
+
+    const response = await request(createTestApp('seller'))
+      .post('/offers/offer-1/counter')
+      .send({ amount: 12000 });
+
+    expect(response.status).toBe(201);
+    expect(mocks.createOffer).toHaveBeenCalledWith(
+      expect.objectContaining({ version: 2, status: 'pending', createdByRole: 'seller' }),
+    );
+    expect(submission.status).toBe('in_negotiation');
+    expect(submission.save).toHaveBeenCalledOnce();
+  });
+
+  it('rejects re-accepting a declined desk offer', async () => {
+    const { offer, submission } = setupOffer();
+    offer.createdByRole = 'trade_desk';
+    offer.status = 'declined';
+    submission.status = 'in_negotiation';
+
+    const response = await request(createTestApp('seller'))
+      .post('/offers/offer-1/accept');
+
+    expect(response.status).toBe(409);
+  });
+
+  it('rejects re-declining a declined desk offer', async () => {
+    const { offer, submission } = setupOffer();
+    offer.createdByRole = 'trade_desk';
+    offer.status = 'declined';
+    submission.status = 'in_negotiation';
+
+    const response = await request(createTestApp('seller'))
+      .post('/offers/offer-1/decline');
+
+    expect(response.status).toBe(409);
+  });
 });

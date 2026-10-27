@@ -57,8 +57,7 @@ async function loadActionableOffer(
   if (
     allowDeclinedSellerCounter &&
     user.role === 'seller' &&
-    offer.status === 'declined' &&
-    offer.createdByRole === 'seller'
+    offer.status === 'declined'
   ) {
     return { offer, submission };
   }
@@ -151,10 +150,11 @@ offersRouter.post('/:id/decline', async (req: Request, res: Response) => {
   offer.respondedBy = new Types.ObjectId(req.user!.id);
   await offer.save();
 
-  // A seller declining ends the trade; a desk declining a seller counter keeps it in negotiation.
+  // A seller declining keeps the trade open for further negotiation; only the trade desk ending
+  // the trade marks it as 'declined' (final). A desk declining a seller counter stays in negotiation.
   submission.status =
     req.user!.role === 'seller'
-      ? 'declined'
+      ? 'in_negotiation'
       : offer.createdByRole === 'seller'
         ? 'in_negotiation'
         : 'submitted';
@@ -169,9 +169,7 @@ offersRouter.post('/:id/decline', async (req: Request, res: Response) => {
   });
 
   const declineBody =
-    submission.status === 'declined'
-      ? `Offer v${offer.version} on submission ${submission.referenceId} was declined and the trade has ended.`
-      : `Your offer v${offer.version} on submission ${submission.referenceId} was declined. The trade is reopened for further negotiation.`;
+    `Your offer v${offer.version} on submission ${submission.referenceId} was declined. The trade is reopened for further negotiation.`;
   await notify({
     tenantId: submission.tenantId,
     submissionId: submission._id,

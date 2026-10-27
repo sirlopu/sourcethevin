@@ -182,4 +182,20 @@ describe('SubmissionView offer expiry', () => {
     expect(screen.queryByText('Trade declined')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Counter' })).not.toBeInTheDocument();
   });
+
+  it('keeps the trade open and offers a counter when the seller declines a desk offer', async () => {
+    mocks.getSubmission.mockResolvedValue({ ...submission, status: 'in_negotiation' });
+    mocks.getLatestOffer.mockResolvedValue({
+      ...offer(new Date(Date.now() + 60_000).toISOString()),
+      status: 'declined',
+      createdByRole: 'trade_desk',
+    });
+    renderPage();
+
+    expect(await screen.findByText('You declined this offer')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Counter' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Accept offer' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Trade declined')).not.toBeInTheDocument();
+  });
 });

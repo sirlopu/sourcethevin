@@ -101,7 +101,8 @@ export default function SubmissionView() {
           submission.status !== 'closed' &&
           offer &&
           ((offer.status === 'pending' && offer.createdByRole === 'trade_desk') ||
-            (offer.status === 'declined' && offer.createdByRole === 'seller')) && (
+            (offer.status === 'declined' && offer.createdByRole === 'seller') ||
+            (offer.status === 'declined' && offer.createdByRole === 'trade_desk')) && (
             <OfferReviewCard
               submission={submission}
               offer={offer}
@@ -218,7 +219,8 @@ function OfferReviewCard({
   const [clock, setClock] = useState(() => Date.now());
   const expiresAt = new Date(offer.expiresAt).getTime();
   const declinedCounter = offer.status === 'declined' && offer.createdByRole === 'seller';
-  const expired = !declinedCounter && clock >= expiresAt;
+  const declinedDeskOffer = offer.status === 'declined' && offer.createdByRole === 'trade_desk';
+  const expired = !declinedCounter && !declinedDeskOffer && clock >= expiresAt;
 
   useEffect(() => {
     // Fire immediately (next tick) if already past expiry so `clock` catches up.
@@ -282,11 +284,13 @@ function OfferReviewCard({
           aria-live="polite"
           className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${expired ? 'bg-red-200 text-red-950' : 'bg-white/10 text-blue-100'}`}
         >
-          {declinedCounter
-            ? 'Trade desk declined your counter'
-            : expired
-              ? '! Offer expired'
-              : '● Awaiting your response'}
+          {declinedDeskOffer
+            ? 'You declined this offer'
+            : declinedCounter
+              ? 'Trade desk declined your counter'
+              : expired
+                ? '! Offer expired'
+                : '● Awaiting your response'}
         </span>
 
         <p className="mt-4 font-mono text-xs text-blue-100">{submission.referenceId}</p>
@@ -320,14 +324,19 @@ function OfferReviewCard({
             The Trade Desk declined your counter. You can propose a new amount while this trade remains open.
           </p>
         )}
-        {!declinedCounter && expired && (
+        {declinedDeskOffer && (
+          <p className="mt-4 rounded-md border border-red-300/40 bg-red-950/40 p-3 text-center text-sm font-semibold text-red-100">
+            You declined this offer. You can still send a counter-offer to keep the trade open.
+          </p>
+        )}
+        {!declinedCounter && !declinedDeskOffer && expired && (
           <p className="mt-5 rounded-md border border-red-300/40 bg-red-950/40 p-3 text-center text-sm font-semibold text-red-100">
             This offer has expired. Message the Trade Desk to ask for a new offer.
           </p>
         )}
         {!expired && (
           <>
-            {!declinedCounter && (
+            {!declinedCounter && !declinedDeskOffer && (
               <button
                 type="button"
                 disabled={submitting}
@@ -343,11 +352,13 @@ function OfferReviewCard({
               type="button"
               disabled={submitting}
               onClick={() => setCounterOpen((open) => !open)}
-              className={`${declinedCounter ? 'mt-5' : 'mt-2'} w-full rounded-md border-[1.5px] border-blue-300 bg-white/10 py-3 font-display font-semibold text-blue-100 hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50`}
+              className={`${
+                declinedCounter || declinedDeskOffer ? 'mt-5' : 'mt-2'
+              } w-full rounded-md border-[1.5px] border-blue-300 bg-white/10 py-3 font-display font-semibold text-blue-100 hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50`}
             >
               {counterOpen ? 'Cancel counter' : 'Counter'}
             </button>
-            {!declinedCounter && (
+            {!declinedCounter && !declinedDeskOffer && (
               <button
                 type="button"
                 disabled={submitting}
@@ -395,7 +406,7 @@ function OfferReviewCard({
           </>
         )}
 
-        {!expired && !declinedCounter && (
+        {!expired && !declinedCounter && !declinedDeskOffer && (
           <p className="mt-4 text-center text-xs text-blue-100">
             Accepting records your name, the date &amp; time, and offer version.
           </p>

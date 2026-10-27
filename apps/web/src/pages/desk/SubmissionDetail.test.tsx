@@ -232,3 +232,29 @@ describe('SubmissionDetail closed submission', () => {
     expect(screen.queryByText('No offer sent yet.')).not.toBeInTheDocument();
   });
 });
+
+describe('SubmissionDetail in negotiation (seller declined desk offer)', () => {
+  const declinedDeskOffer: OfferRecord = {
+    _id: 'offer-1',
+    submissionId: submission._id,
+    version: 1,
+    amount: 1000,
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    terms: '',
+    notes: '',
+    status: 'declined',
+    createdByRole: 'trade_desk',
+    createdBy: 'desk-user-1',
+    createdAt: '2026-10-01T00:00:00.000Z',
+  };
+
+  it('keeps the send-offer form visible so the desk can submit a new offer', async () => {
+    mocks.getSubmissionDetail.mockResolvedValue({ ...submission, status: 'in_negotiation' });
+    mocks.getLatestOffer.mockResolvedValue(declinedDeskOffer);
+    renderPage();
+
+    await screen.findByText('Send offer to seller');
+    expect(screen.getByRole('button', { name: 'Send offer to seller' })).toBeInTheDocument();
+    expect(screen.queryByText(/Trade closed/)).not.toBeInTheDocument();
+  });
+});
