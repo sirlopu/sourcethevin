@@ -459,7 +459,7 @@ function OfferPanel({
               type="number"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
-              className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
+              className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
           </label>
           <label className="block">
@@ -644,7 +644,7 @@ function ValuationWorkspacePanel({
   const [expenses, setExpenses] = useState<EstimatedExpenses>(
     initial?.estimatedExpenses ?? EMPTY_EXPENSES,
   );
-  const [targetMargin, setTargetMargin] = useState(String(initial?.targetMargin ?? 0));
+  const [targetMargin, setTargetMargin] = useState('');
   const [recommendedMax, setRecommendedMax] = useState(initial?.recommendedMaxAcquisition ?? 0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -782,12 +782,12 @@ function ValuationWorkspacePanel({
         <span className="text-xs font-semibold uppercase tracking-wide text-ink-500">
           Target margin
         </span>
-        <input
-          type="number"
-          value={targetMargin}
-          onChange={(event) => setTargetMargin(event.target.value)}
-          className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
-        />
+          <input
+            type="number"
+            value={targetMargin}
+            onChange={(event) => setTargetMargin(event.target.value)}
+            className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          />
       </label>
 
       {error && (
