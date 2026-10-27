@@ -100,7 +100,7 @@ export default function SubmissionDetail() {
       <div className="mt-2 flex items-center gap-2">
         <p className="font-mono text-xs text-ink-500">{submission.referenceId}</p>
         {(() => {
-          const badge = statusBadge(submission.status);
+          const badge = statusBadge(submission.status, 'trade_desk');
           return (
             <span
               className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}

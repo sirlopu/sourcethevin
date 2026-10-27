@@ -24,7 +24,11 @@ const STATUS_BADGES: Record<SubmissionStatus, StatusBadgeInfo> = {
   closed: { label: 'Closed', className: 'bg-ink-200 text-ink-700' },
 };
 
-export function statusBadge(status: string): StatusBadgeInfo {
+export function statusBadge(status: string, context?: 'seller' | 'trade_desk' | 'desk'): StatusBadgeInfo {
+  if ((context === 'trade_desk' || context === 'desk') && status === 'offer_sent') {
+    return STATUS_BADGES.in_negotiation;
+  }
+
   return (
     STATUS_BADGES[status as SubmissionStatus] ?? {
       label: status,

@@ -201,7 +201,7 @@ export default function DeskQueue() {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const badge = statusBadge(status);
+  const badge = statusBadge(status, 'trade_desk');
   return (
     <span
       className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${badge.className}`}
