@@ -166,7 +166,7 @@ describe('SubmissionView offer expiry', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('does not show counter controls after the submission is closed', async () => {
+  it('shows closed state and removes counter controls after the submission is closed', async () => {
     mocks.getSubmission.mockResolvedValue({ ...submission, status: 'closed' });
     mocks.getLatestOffer.mockResolvedValue({
       ...offer(new Date(Date.now() + 60_000).toISOString()),
@@ -175,7 +175,11 @@ describe('SubmissionView offer expiry', () => {
     });
     renderPage();
 
-    expect(await screen.findByText('Trade declined')).toBeInTheDocument();
+    expect(await screen.findByText('Trade closed')).toBeInTheDocument();
+    expect(
+      screen.getByText(/No further offers or counters are possible/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Trade declined')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Counter' })).not.toBeInTheDocument();
   });
 });

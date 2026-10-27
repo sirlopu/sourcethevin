@@ -201,3 +201,34 @@ describe('SubmissionDetail offer status', () => {
     expect(status).toHaveClass('bg-danger-bg', 'text-danger');
   });
 });
+
+describe('SubmissionDetail closed submission', () => {
+  const closedSubmission: SubmissionListItem = {
+    ...submission,
+    status: 'closed',
+  };
+
+  it('removes the offer card and shows a closed placeholder when a latest offer exists', async () => {
+    mocks.getSubmissionDetail.mockResolvedValue(closedSubmission);
+    mocks.getLatestOffer.mockResolvedValue(expiredOffer);
+    renderPage();
+
+    await screen.findByText('Trade closed');
+    expect(
+      screen.getByText(/No further offers or counters are possible/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('v1 · $1,000')).not.toBeInTheDocument();
+  });
+
+  it('shows the closed placeholder instead of "No offer sent yet." when there is no offer', async () => {
+    mocks.getSubmissionDetail.mockResolvedValue(closedSubmission);
+    mocks.getLatestOffer.mockResolvedValue(null);
+    renderPage();
+
+    await screen.findByText('Trade closed');
+    expect(
+      screen.getByText(/No further offers or counters are possible/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('No offer sent yet.')).not.toBeInTheDocument();
+  });
+});

@@ -303,6 +303,7 @@ function OfferPanel({
 
   const resolved =
     submissionStatus === 'accepted' || submissionStatus === 'declined' || submissionStatus === 'closed';
+  const isClosed = submissionStatus === 'closed';
 
   async function handleAcceptCounter() {
     if (!latestOffer) return;
@@ -383,7 +384,7 @@ function OfferPanel({
     <div className="rounded-md border border-ink-200 bg-white p-5">
       <p className="font-display text-sm font-bold text-navy-900">Offer</p>
 
-      {loaded && latestOffer && (
+      {loaded && latestOffer && !isClosed && (
         <div className="mt-3 rounded-md bg-ink-50 p-3 text-sm">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-ink-900">
@@ -435,7 +436,17 @@ function OfferPanel({
           </p>
         </div>
       )}
-      {loaded && !latestOffer && <p className="mt-2 text-sm text-ink-500">No offer sent yet.</p>}
+      {loaded && !latestOffer && !isClosed && (
+        <p className="mt-2 text-sm text-ink-500">No offer sent yet.</p>
+      )}
+      {isClosed && (
+        <div className="mt-3 rounded-md border border-ink-200 bg-ink-50 p-3 text-sm text-ink-700">
+          <p className="font-semibold text-ink-900">Trade closed</p>
+          <p className="mt-1">
+            This submission is closed. No further offers or counters are possible.
+          </p>
+        </div>
+      )}
 
       {!resolved && (
         <div className="mt-4 space-y-3">

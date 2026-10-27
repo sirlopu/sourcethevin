@@ -88,8 +88,12 @@ export default function SubmissionView() {
           <AcceptedTimeline submission={submission} auditEntries={auditEntries} />
         )}
 
-        {(submission.status === 'declined' || submission.status === 'closed') && (
+        {submission.status === 'declined' && (
           <DeclinedCard submission={submission} />
+        )}
+
+        {submission.status === 'closed' && (
+          <ClosedCard submission={submission} />
         )}
 
         {submission.status !== 'accepted' &&
@@ -142,6 +146,25 @@ function DeclinedCard({ submission }: { submission: SubmissionRecord }) {
       <p className="mt-2 text-sm text-ink-500">
         This trade for {vehicleLabel(submission)} has been declined. You can start a new trade-in
         any time.
+      </p>
+      <Link
+        to="/dashboard"
+        className="mt-4 inline-block rounded-md bg-navy-900 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-800"
+      >
+        Back to dashboard
+      </Link>
+      <VehicleDetailsCard submission={submission} />
+    </div>
+  );
+}
+
+function ClosedCard({ submission }: { submission: SubmissionRecord }) {
+  return (
+    <div className="rounded-xl bg-white p-8 text-center shadow-[0_12px_32px_rgba(10,31,82,.14)]">
+      <p className="font-display text-xl font-bold text-navy-900">Trade closed</p>
+      <p className="mt-2 text-sm text-ink-500">
+        The trade negotiation for {vehicleLabel(submission)} has ended. No further offers or
+        counters are possible.
       </p>
       <Link
         to="/dashboard"
