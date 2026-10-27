@@ -47,7 +47,7 @@ async function loadActionableOffer(
   if (!authorized) {
     return { error: 'not_found' };
   }
-  if (submission.status === 'accepted' || submission.status === 'declined') {
+  if (submission.status === 'accepted' || submission.status === 'declined' || submission.status === 'closed') {
     return { error: 'not_pending' };
   }
   const latestOffer = await Offer.findOne({ submissionId: submission._id }).sort({ version: -1 });

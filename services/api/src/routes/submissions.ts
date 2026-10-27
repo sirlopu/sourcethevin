@@ -37,6 +37,7 @@ const SELLER_VISIBLE_AUDIT_ACTIONS = new Set([
   'offer_accepted',
   'offer_declined',
   'offer_countered',
+  'submission_closed',
 ]);
 
 export const submissionsRouter = Router();
@@ -542,7 +543,7 @@ submissionsRouter.post(
       res.status(409).json({ error: 'This submission has not been submitted yet' });
       return;
     }
-    if (submission.status === 'accepted' || submission.status === 'declined') {
+    if (submission.status === 'accepted' || submission.status === 'declined' || submission.status === 'closed') {
       res.status(409).json({ error: 'This trade has already been resolved' });
       return;
     }
@@ -609,7 +610,7 @@ submissionsRouter.post(
       res.status(404).json({ error: 'Submission not found' });
       return;
     }
-    if (submission.status === 'accepted' || submission.status === 'declined') {
+    if (submission.status === 'accepted' || submission.status === 'declined' || submission.status === 'closed') {
       res.status(409).json({ error: 'This trade has already been resolved' });
       return;
     }
@@ -639,6 +640,52 @@ submissionsRouter.post(
       recipients: seller ? [seller] : [],
       title: 'Trade ended',
       body: `Trade desk ended the trade for submission ${submission.referenceId}.`,
+      link: `/submissions/${submission._id}`,
+    });
+
+    res.status(200).json(submission);
+  },
+);
+
+submissionsRouter.post(
+  '/:id/close',
+  requireRole('trade_desk'),
+  async (req: Request, res: Response) => {
+    const submission = await loadTenantSubmission(paramId(req), req.user!.tenantId);
+    if (!submission) {
+      res.status(404).json({ error: 'Submission not found' });
+      return;
+    }
+    if (submission.status === 'accepted' || submission.status === 'declined' || submission.status === 'closed') {
+      res.status(409).json({ error: 'This trade has already been resolved' });
+      return;
+    }
+
+    // Close out any live offer so it can't later be accepted/declined once the trade is closed.
+    await Offer.updateMany(
+      { submissionId: submission._id, status: 'pending' },
+      { status: 'declined', respondedAt: new Date(), respondedBy: req.user!.id },
+    );
+
+    submission.status = 'closed';
+    await submission.save();
+
+    await AuditLog.create({
+      tenantId: submission.tenantId,
+      submissionId: submission._id,
+      actorId: req.user!.id,
+      action: 'submission_closed',
+      detail: 'Trade desk ended the trade',
+    });
+
+    const seller = await getSeller(submission);
+    await notify({
+      tenantId: submission.tenantId,
+      submissionId: submission._id,
+      type: 'trade_closed',
+      recipients: seller ? [seller] : [],
+      title: 'Trade closed',
+      body: `Trade desk closed the trade for submission ${submission.referenceId}.`,
       link: `/submissions/${submission._id}`,
     });
 

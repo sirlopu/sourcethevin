@@ -88,10 +88,13 @@ export default function SubmissionView() {
           <AcceptedTimeline submission={submission} auditEntries={auditEntries} />
         )}
 
-        {submission.status === 'declined' && <DeclinedCard submission={submission} />}
+        {(submission.status === 'declined' || submission.status === 'closed') && (
+          <DeclinedCard submission={submission} />
+        )}
 
         {submission.status !== 'accepted' &&
           submission.status !== 'declined' &&
+          submission.status !== 'closed' &&
           offer &&
           ((offer.status === 'pending' && offer.createdByRole === 'trade_desk') ||
             (offer.status === 'declined' && offer.createdByRole === 'seller')) && (
@@ -105,13 +108,14 @@ export default function SubmissionView() {
 
         {submission.status !== 'accepted' &&
           submission.status !== 'declined' &&
+          submission.status !== 'closed' &&
           offer &&
           offer.status === 'pending' &&
           offer.createdByRole === 'seller' && (
             <WaitingCard message="We've received your counter-offer and are reviewing it." />
           )}
 
-        {submission.status !== 'accepted' && submission.status !== 'declined' && !offer && (
+        {submission.status !== 'accepted' && submission.status !== 'declined' && submission.status !== 'closed' && !offer && (
           <WaitingCard message="Your trade-in is under review." />
         )}
 

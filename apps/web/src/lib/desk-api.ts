@@ -61,7 +61,7 @@ export interface SubmissionListResponse {
 }
 
 export interface ListSubmissionsParams {
-  status?: 'new' | 'submitted';
+  status?: 'new' | 'submitted' | 'closed';
   seller?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -123,5 +123,11 @@ export function overrideValuation(
 export function declineSubmission(authFetch: AuthFetch, submissionId: string) {
   return parseJson<SubmissionListItem>(
     authFetch(`/submissions/${submissionId}/decline`, { method: 'POST' }),
+  );
+}
+
+export function closeSubmission(authFetch: AuthFetch, submissionId: string) {
+  return parseJson<SubmissionListItem>(
+    authFetch(`/submissions/${submissionId}/close`, { method: 'POST' }),
   );
 }

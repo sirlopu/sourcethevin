@@ -5,7 +5,7 @@ import { ApiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
 import {
   appendInternalNote,
-  declineSubmission,
+  closeSubmission,
   getSubmissionDetail,
   saveValuation,
   type BidReference,
@@ -301,7 +301,8 @@ function OfferPanel({
     return () => window.clearTimeout(timeout);
   }, [latestOffer?._id, latestOffer?.status, latestOffer?.expiresAt]);
 
-  const resolved = submissionStatus === 'accepted' || submissionStatus === 'declined';
+  const resolved =
+    submissionStatus === 'accepted' || submissionStatus === 'declined' || submissionStatus === 'closed';
 
   async function handleAcceptCounter() {
     if (!latestOffer) return;
@@ -340,7 +341,7 @@ function OfferPanel({
     setResponding(true);
     setError(null);
     try {
-      const updated = await declineSubmission(authFetch, submissionId);
+      const updated = await closeSubmission(authFetch, submissionId);
       onStatusChange(updated.status);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to end this trade.');

@@ -21,7 +21,7 @@ vi.mock('../../lib/auth-context', () => ({
 vi.mock('../../components/MessageThread', () => ({ default: () => null }));
 
 vi.mock('../../lib/desk-api', () => ({
-  declineSubmission: vi.fn(),
+  closeSubmission: vi.fn(),
   getSubmissionDetail: mocks.getSubmissionDetail,
   overrideValuation: vi.fn(),
   appendInternalNote: mocks.appendInternalNote,

@@ -20,6 +20,7 @@ vi.mock('../models/Submission', () => ({
     'in_negotiation',
     'accepted',
     'declined',
+    'closed',
   ],
   Submission: { findById: findSubmissionById },
 }));

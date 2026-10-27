@@ -5,6 +5,7 @@ export const SUBMISSION_STATUSES = [
   'in_negotiation',
   'accepted',
   'declined',
+  'closed',
 ] as const;
 export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
 
@@ -20,6 +21,7 @@ const STATUS_BADGES: Record<SubmissionStatus, StatusBadgeInfo> = {
   in_negotiation: { label: 'In Negotiation', className: 'bg-warning-bg text-warning' },
   accepted: { label: 'Accepted', className: 'bg-success-bg text-success' },
   declined: { label: 'Declined', className: 'bg-danger-bg text-danger' },
+  closed: { label: 'Closed', className: 'bg-ink-200 text-ink-700' },
 };
 
 export function statusBadge(status: string): StatusBadgeInfo {

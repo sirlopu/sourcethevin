@@ -7,6 +7,7 @@ export const NOTIFICATION_TYPES = [
   'offer_declined',
   'offer_countered',
   'trade_declined',
+  'trade_closed',
   'message_received',
   'seller_request_received',
   'seller_request_approved',

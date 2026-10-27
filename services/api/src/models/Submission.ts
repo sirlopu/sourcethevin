@@ -17,6 +17,7 @@ export const SUBMISSION_STATUSES = [
   'in_negotiation',
   'accepted',
   'declined',
+  'closed',
 ] as const;
 export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
 

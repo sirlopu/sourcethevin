@@ -167,7 +167,7 @@ describe('SubmissionView offer expiry', () => {
   });
 
   it('does not show counter controls after the submission is closed', async () => {
-    mocks.getSubmission.mockResolvedValue({ ...submission, status: 'declined' });
+    mocks.getSubmission.mockResolvedValue({ ...submission, status: 'closed' });
     mocks.getLatestOffer.mockResolvedValue({
       ...offer(new Date(Date.now() + 60_000).toISOString()),
       status: 'declined',

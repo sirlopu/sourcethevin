@@ -159,7 +159,7 @@ describe('offer negotiation status', () => {
     const { offer, submission } = setupOffer();
     offer.createdByRole = 'seller';
     offer.status = 'declined';
-    submission.status = 'declined';
+    submission.status = 'closed';
 
     const response = await request(createTestApp('seller'))
       .post('/offers/offer-1/counter')
