@@ -60,6 +60,11 @@ export default function SignIn() {
         )}
         <SubmitButton disabled={submitting}>{submitting ? 'Signing in…' : 'Sign in'}</SubmitButton>
       </form>
+      <p className="mt-4 text-center text-sm text-blue-100">
+        <Link to="/forgot-password" className="font-semibold text-white underline">
+          Forgot Password?
+        </Link>
+      </p>
       <p className="mt-6 text-center text-sm text-blue-100">
         Got a trade to source?{' '}
         <Link to="/request-access" className="font-semibold text-white underline">

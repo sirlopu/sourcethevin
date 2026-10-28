@@ -26,6 +26,8 @@ const userSchema = new Schema(
       lowercase: true,
       trim: true,
     },
+    firstName: { type: String, trim: true },
+    lastName: { type: String, trim: true },
     passwordHash: { type: String, required: true, select: false },
     role: {
       type: String,
@@ -43,6 +45,8 @@ const userSchema = new Schema(
     mustChangePassword: { type: Boolean, required: true, default: false },
     refreshTokenHash: { type: String, default: null, select: false },
     refreshTokenExpiresAt: { type: Date, default: null, select: false },
+    passwordResetTokenHash: { type: String, default: null, select: false },
+    passwordResetExpiresAt: { type: Date, default: null, select: false },
   },
   { timestamps: true },
 );

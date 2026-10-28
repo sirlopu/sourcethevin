@@ -5,9 +5,8 @@ import { ApiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
 import {
   appendInternalNote,
-  declineSubmission,
+  closeSubmission,
   getSubmissionDetail,
-  overrideValuation,
   saveValuation,
   type BidReference,
   type EstimatedExpenses,
@@ -22,7 +21,8 @@ import {
 } from '../../lib/offers-api';
 import { formatRelativeAge } from '../../lib/relative-time';
 import { statusBadge } from '../../lib/submission-status';
-import { photoSlotLabel } from '@sourcethevin/shared';
+import { vehicleLabel } from '../../lib/vehicle-display';
+import { photoSlotLabel, formatWarningLights } from '@sourcethevin/shared';
 import type { SubmissionPhoto } from '../../lib/wizard-api';
 
 const EMPTY_EXPENSES: EstimatedExpenses = {
@@ -81,15 +81,7 @@ export default function SubmissionDetail() {
     );
   }
 
-  const vehicleHeading =
-    [
-      submission.vehicle.year,
-      submission.vehicle.make,
-      submission.vehicle.model,
-      submission.vehicle.trim,
-    ]
-      .filter(Boolean)
-      .join(' ') || 'Vehicle';
+  const vehicleHeading = vehicleLabel(submission.vehicle);
 
   return (
     <main className="mx-auto max-w-5xl p-8">
@@ -108,7 +100,7 @@ export default function SubmissionDetail() {
       <div className="mt-2 flex items-center gap-2">
         <p className="font-mono text-xs text-ink-500">{submission.referenceId}</p>
         {(() => {
-          const badge = statusBadge(submission.status);
+          const badge = statusBadge(submission.status, 'trade_desk');
           return (
             <span
               className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}
@@ -170,92 +162,102 @@ export default function SubmissionDetail() {
         </div>
       )}
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="space-y-6">
-          <Card title="Vehicle & condition">
-            <Row label="Mileage" value={submission.vehicle.mileage?.toLocaleString() ?? '—'} />
-            <Row
-              label="Drivetrain"
-              value={
-                [submission.vehicle.drivetrain, submission.vehicle.engine]
-                  .filter(Boolean)
-                  .join(' · ') || '—'
-              }
-            />
-            <Row label="Runs & drives" value={submission.condition.runsAndDrives ?? '—'} />
-            <Row label="Warning lights" value={submission.condition.warningLights ?? '—'} />
-            <Row label="Structural" value={submission.condition.accidentHistory ?? '—'} />
-            <Row
-              label="Cosmetic"
-              value={submission.condition.cosmeticIssues.join(', ') || 'None reported'}
-            />
-            <Row label="Tires" value={submission.condition.tireCondition ?? '—'} />
-            <Row label="Windshield" value={submission.condition.windshieldCondition ?? '—'} />
-          </Card>
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+        <div className="contents lg:col-start-2 lg:row-start-1 lg:flex lg:flex-col lg:gap-6">
+          <div className="order-1 lg:order-none">
+            <Card title="Vehicle & condition">
+              <Row label="Mileage" value={submission.vehicle.mileage?.toLocaleString() ?? '—'} />
+              <Row
+                label="Drivetrain"
+                value={
+                  [submission.vehicle.drivetrain, submission.vehicle.engine]
+                    .filter(Boolean)
+                    .join(' · ') || '—'
+                }
+              />
+              <Row label="Runs & drives" value={submission.condition.runsAndDrives ?? '—'} />
+              <Row
+                label="Warning lights"
+                value={
+                  formatWarningLights(
+                    submission.condition.warningLights ?? [],
+                    submission.condition.warningLightsDescription,
+                  ) ?? '—'
+                }
+              />
+              <Row label="Structural" value={submission.condition.accidentHistory ?? '—'} />
+              <Row
+                label="Cosmetic"
+                value={submission.condition.cosmeticIssues.join(', ') || 'None reported'}
+              />
+              <Row label="Tires" value={submission.condition.tireCondition ?? '—'} />
+              <Row label="Windshield" value={submission.condition.windshieldCondition ?? '—'} />
+            </Card>
+          </div>
 
-          <Card title="Trade & payoff">
-            <Row
-              label="Customer expectation"
-              value={
-                submission.payoff.expectedAllowance != null
-                  ? `$${submission.payoff.expectedAllowance.toLocaleString()}`
-                  : '—'
-              }
-            />
-            <Row
-              label="Lien payoff"
-              value={
-                submission.payoff.payoffAmount != null
-                  ? `$${submission.payoff.payoffAmount.toLocaleString()}${submission.payoff.lienHolder ? ` · ${submission.payoff.lienHolder}` : ''}`
-                  : '—'
-              }
-            />
-            <Row label="Title" value={submission.payoff.titleStatus ?? '—'} />
-            {submission.payoff.sellerNotes && (
-              <p className="mt-2 rounded-md bg-ink-50 p-3 text-sm text-ink-700">
-                <span className="font-semibold">Seller note: </span>
-                {submission.payoff.sellerNotes}
-              </p>
-            )}
-          </Card>
+          <div className="order-2 lg:order-none">
+            <Card title="Trade & payoff">
+              <Row
+                label="Lien payoff"
+                value={
+                  submission.payoff.payoffAmount != null
+                    ? `$${submission.payoff.payoffAmount.toLocaleString()}${submission.payoff.lienHolder ? ` · ${submission.payoff.lienHolder}` : ''}`
+                    : '—'
+                }
+              />
+              <Row label="Title" value={submission.payoff.titleStatus ?? '—'} />
+              {submission.payoff.sellerNotes && (
+                <p className="mt-2 rounded-md bg-ink-50 p-3 text-sm text-ink-700">
+                  <span className="font-semibold">Seller note: </span>
+                  {submission.payoff.sellerNotes}
+                </p>
+              )}
+            </Card>
+          </div>
 
           {submission.valuation !== undefined && (
-            <InternalNotesCard
-              submissionId={id}
-              authFetch={authFetch}
-              valuation={submission.valuation}
-            />
+            <div className="order-5 lg:order-none">
+              <OfferPanel
+                submissionId={id}
+                authFetch={authFetch}
+                submissionStatus={submission.status}
+                onStatusChange={(status) =>
+                  setSubmission((prev) => (prev ? { ...prev, status } : prev))
+                }
+              />
+            </div>
           )}
+
+          <div className="order-6 lg:order-none">
+            <MessageThread submissionId={id} currentUserRole="trade_desk" />
+          </div>
         </div>
 
         {submission.valuation !== undefined && (
-          <div className="space-y-6">
-            <ValuationWorkspacePanel
-              submissionId={id}
-              authFetch={authFetch}
-              initial={submission.valuation}
-            />
-            <OfferPanel
-              submissionId={id}
-              authFetch={authFetch}
-              submissionStatus={submission.status}
-              onStatusChange={(status) =>
-                setSubmission((prev) => (prev ? { ...prev, status } : prev))
-              }
-            />
+          <div className="contents lg:col-start-1 lg:row-start-1 lg:flex lg:flex-col lg:gap-6">
+            <div className="order-4 lg:order-none">
+              <ValuationWorkspacePanel
+                submissionId={id}
+                authFetch={authFetch}
+                initial={submission.valuation}
+              />
+            </div>
+            <div className="order-3 lg:order-none">
+              <InternalNotesCard
+                submissionId={id}
+                authFetch={authFetch}
+                valuation={submission.valuation}
+              />
+            </div>
           </div>
         )}
-      </div>
-
-      <div className="mt-6">
-        <MessageThread submissionId={id} currentUserRole="trade_desk" />
       </div>
     </main>
   );
 }
 
 function defaultExpiryLocal(): string {
-  const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
@@ -307,7 +309,11 @@ function OfferPanel({
     return () => window.clearTimeout(timeout);
   }, [latestOffer?._id, latestOffer?.status, latestOffer?.expiresAt]);
 
-  const resolved = submissionStatus === 'accepted' || submissionStatus === 'declined';
+  const resolved =
+    submissionStatus === 'accepted' ||
+    submissionStatus === 'declined' ||
+    submissionStatus === 'closed';
+  const isClosed = submissionStatus === 'closed';
 
   async function handleAcceptCounter() {
     if (!latestOffer) return;
@@ -331,7 +337,7 @@ function OfferPanel({
     try {
       const offer = await declineOffer(authFetch, latestOffer._id);
       setLatestOffer(offer);
-      onStatusChange('submitted');
+      onStatusChange('in_negotiation');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to decline the offer.');
     } finally {
@@ -346,7 +352,7 @@ function OfferPanel({
     setResponding(true);
     setError(null);
     try {
-      const updated = await declineSubmission(authFetch, submissionId);
+      const updated = await closeSubmission(authFetch, submissionId);
       onStatusChange(updated.status);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to end this trade.');
@@ -388,7 +394,7 @@ function OfferPanel({
     <div className="rounded-md border border-ink-200 bg-white p-5">
       <p className="font-display text-sm font-bold text-navy-900">Offer</p>
 
-      {loaded && latestOffer && (
+      {loaded && latestOffer && !isClosed && (
         <div className="mt-3 rounded-md bg-ink-50 p-3 text-sm">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-ink-900">
@@ -440,7 +446,17 @@ function OfferPanel({
           </p>
         </div>
       )}
-      {loaded && !latestOffer && <p className="mt-2 text-sm text-ink-500">No offer sent yet.</p>}
+      {loaded && !latestOffer && !isClosed && (
+        <p className="mt-2 text-sm text-ink-500">No offer sent yet.</p>
+      )}
+      {isClosed && (
+        <div className="mt-3 rounded-md border border-ink-200 bg-ink-50 p-3 text-sm text-ink-700">
+          <p className="font-semibold text-ink-900">Trade closed</p>
+          <p className="mt-1">
+            This submission is closed. No further offers or counters are possible.
+          </p>
+        </div>
+      )}
 
       {!resolved && (
         <div className="mt-4 space-y-3">
@@ -453,7 +469,7 @@ function OfferPanel({
               type="number"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
-              className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
+              className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
           </label>
           <label className="block">
@@ -501,6 +517,11 @@ function OfferPanel({
           >
             End negotiation
           </button>
+          <p className="text-center text-[11px] text-ink-400">
+            <Link to="/terms" className="hover:underline">
+              Terms & Conditions
+            </Link>
+          </p>
         </div>
       )}
     </div>
@@ -592,6 +613,9 @@ function InternalNotesCard({
             .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
             .map((note, index) => (
               <article key={`${note.createdAt}-${index}`} className="rounded-md bg-ink-50 p-3">
+                <p className="text-xs font-semibold text-ink-700">
+                  {internalNoteAuthorLabel(note)}
+                </p>
                 <time dateTime={note.createdAt} className="text-xs font-semibold text-ink-700">
                   {new Date(note.createdAt).toLocaleString()}
                 </time>
@@ -604,6 +628,17 @@ function InternalNotesCard({
   );
 }
 
+function internalNoteAuthorLabel(note: {
+  authorFirstName?: string;
+  authorLastName?: string;
+  authorEmail?: string;
+}): string {
+  const firstName = note.authorFirstName?.trim();
+  const lastName = note.authorLastName?.trim();
+  if (firstName && lastName) return `${firstName} ${lastName[0]}.`;
+  return note.authorEmail?.trim() || 'Unknown user';
+}
+
 function ValuationWorkspacePanel({
   submissionId,
   authFetch,
@@ -614,20 +649,15 @@ function ValuationWorkspacePanel({
   initial: SubmissionListItem['valuation'];
 }) {
   const [bidReferences, setBidReferences] = useState<BidReference[]>(initial?.bidReferences ?? []);
-  const [newSource, setNewSource] = useState('');
+  const [newSource, setNewSource] = useState('MMR');
   const [newAmount, setNewAmount] = useState('');
   const [expenses, setExpenses] = useState<EstimatedExpenses>(
     initial?.estimatedExpenses ?? EMPTY_EXPENSES,
   );
-  const [targetMargin, setTargetMargin] = useState(String(initial?.targetMargin ?? 0));
+  const [targetMargin, setTargetMargin] = useState('');
   const [recommendedMax, setRecommendedMax] = useState(initial?.recommendedMaxAcquisition ?? 0);
-  const [buyerOverride, setBuyerOverride] = useState(initial?.buyerOverride ?? null);
-  const [overrideAmount, setOverrideAmount] = useState('');
-  const [overrideReason, setOverrideReason] = useState('');
   const [saving, setSaving] = useState(false);
-  const [overriding, setOverriding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [overrideError, setOverrideError] = useState<string | null>(null);
 
   function addBidReference() {
     const amount = Number(newAmount);
@@ -654,7 +684,12 @@ function ValuationWorkspacePanel({
           amount: b.amount,
           loggedAt: b.loggedAt,
         })),
-        estimatedExpenses: expenses,
+        estimatedExpenses: {
+          transport: expenses.transport,
+          recon: expenses.recon,
+          arbitrationCondition: expenses.arbitrationCondition ?? 0,
+          other: expenses.other,
+        },
         targetMargin: Number(targetMargin) || 0,
       });
       setRecommendedMax(updated.recommendedMaxAcquisition);
@@ -663,33 +698,6 @@ function ValuationWorkspacePanel({
       setError(err instanceof ApiError ? err.message : 'Unable to save the valuation.');
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function handleOverride() {
-    setOverrideError(null);
-    const amount = Number(overrideAmount);
-    if (!Number.isFinite(amount) || amount < 0) {
-      setOverrideError('Enter a valid override amount.');
-      return;
-    }
-    if (!overrideReason.trim()) {
-      setOverrideError('An override reason is required.');
-      return;
-    }
-    setOverriding(true);
-    try {
-      const updated = await overrideValuation(authFetch, submissionId, {
-        amount,
-        reason: overrideReason.trim(),
-      });
-      setBuyerOverride(updated.buyerOverride);
-      setOverrideAmount('');
-      setOverrideReason('');
-    } catch (err) {
-      setOverrideError(err instanceof ApiError ? err.message : 'Unable to log the override.');
-    } finally {
-      setOverriding(false);
     }
   }
 
@@ -729,27 +737,37 @@ function ValuationWorkspacePanel({
           <p className="text-sm text-ink-500">No bid references yet.</p>
         )}
       </div>
-      <div className="mt-2 flex gap-2">
-        <input
-          placeholder="Source"
-          value={newSource}
-          onChange={(event) => setNewSource(event.target.value)}
-          className="min-w-0 flex-1 rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
-        />
-        <input
-          placeholder="$"
-          type="number"
-          value={newAmount}
-          onChange={(event) => setNewAmount(event.target.value)}
-          className="w-24 rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
-        />
-        <button
-          type="button"
-          onClick={addBidReference}
-          className="rounded-md border-[1.5px] border-navy-900 px-3 py-1.5 text-sm font-semibold text-navy-900 hover:bg-ink-50"
-        >
-          + Add
-        </button>
+      <div className="mt-2 flex flex-col gap-2">
+        <span className="text-xs text-ink-500">Bid Reference</span>
+        <div className="flex gap-2">
+          <select
+            value={newSource}
+            onChange={(e) => setNewSource(e.target.value)}
+            className="mt-1 w-48 rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
+          >
+            <option value="" disabled>
+              Select
+            </option>
+            <option value="MMR">MMR</option>
+            <option value="KBB">KBB</option>
+            <option value="CarMax">CarMax</option>
+            <option value="Other">Other</option>
+          </select>
+          <input
+            placeholder="$"
+            type="number"
+            value={newAmount}
+            onChange={(event) => setNewAmount(event.target.value)}
+            className="min-w-0 flex-1 rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
+          />
+          <button
+            type="button"
+            onClick={addBidReference}
+            className="rounded-md border-[1.5px] border-navy-900 px-3 py-1.5 text-sm font-semibold text-navy-900 hover:bg-ink-50"
+          >
+            + Add
+          </button>
+        </div>
       </div>
 
       <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-ink-500">
@@ -767,11 +785,7 @@ function ValuationWorkspacePanel({
           onChange={(v) => setExpenses((c) => ({ ...c, recon: v }))}
         />
         <ExpenseField
-          label="Arbitration / condition"
-          value={expenses.arbitrationCondition}
-          onChange={(v) => setExpenses((c) => ({ ...c, arbitrationCondition: v }))}
-        />
-        <ExpenseField
+          className="col-span-2"
           label="Other"
           value={expenses.other}
           onChange={(v) => setExpenses((c) => ({ ...c, other: v }))}
@@ -786,7 +800,7 @@ function ValuationWorkspacePanel({
           type="number"
           value={targetMargin}
           onChange={(event) => setTargetMargin(event.target.value)}
-          className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
+          className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
       </label>
 
@@ -808,7 +822,7 @@ function ValuationWorkspacePanel({
 
       <div className="mt-4 rounded-md bg-gradient-to-br from-navy-700 to-navy-900 p-4 text-white">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-100">
-          Recommended max acquisition
+          Recommended Bid
         </p>
         <p className="mt-1 font-display text-2xl font-extrabold italic">
           ${recommendedMax.toLocaleString()}
@@ -821,54 +835,6 @@ function ValuationWorkspacePanel({
           {(Number(targetMargin) || 0).toLocaleString()} margin
         </p>
       </div>
-
-      <label className="mt-4 block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-          Buyer override
-        </span>
-        <input
-          type="number"
-          placeholder={buyerOverride ? `Current: $${buyerOverride.amount.toLocaleString()}` : '$'}
-          value={overrideAmount}
-          onChange={(event) => setOverrideAmount(event.target.value)}
-          className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
-        />
-      </label>
-      <label className="mt-2 block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-          Override reason *
-        </span>
-        <textarea
-          rows={2}
-          value={overrideReason}
-          onChange={(event) => setOverrideReason(event.target.value)}
-          className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
-        />
-      </label>
-      <p className="mt-1 text-xs text-ink-500">
-        Logged to the audit trail with your name and time.
-      </p>
-      {overrideError && (
-        <p role="alert" className="mt-1 text-sm font-medium text-danger">
-          {overrideError}
-        </p>
-      )}
-      <button
-        type="button"
-        disabled={overriding}
-        onClick={() => {
-          void handleOverride();
-        }}
-        className="mt-2 w-full rounded-md border-[1.5px] border-navy-900 py-2 text-sm font-semibold text-navy-900 hover:bg-ink-50 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {overriding ? 'Logging…' : 'Log override'}
-      </button>
-      {buyerOverride && (
-        <p className="mt-2 text-xs text-ink-500">
-          Last override: ${buyerOverride.amount.toLocaleString()} by{' '}
-          {formatRelativeAge(buyerOverride.loggedAt)} ago — &ldquo;{buyerOverride.reason}&rdquo;
-        </p>
-      )}
     </div>
   );
 }
@@ -877,19 +843,26 @@ function ExpenseField({
   label,
   value,
   onChange,
+  className,
 }: {
   label: string;
   value: number;
   onChange: (value: number) => void;
+  className?: string;
 }) {
   return (
-    <label className="block">
+    <label className={`block ${className ?? ''}`}>
       <span className="text-xs text-ink-500">{label}</span>
       <input
-        type="number"
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value) || 0)}
-        className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={value === 0 ? '0' : value}
+        onChange={(e) => {
+          const v = e.target.value.replace(/[^0-9]/g, '');
+          onChange(v === '' ? 0 : Number(v));
+        }}
+        className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
     </label>
   );

@@ -7,7 +7,8 @@ import { ApiError, requestSellerAccess } from '../lib/api';
 
 export default function RequestSellerAccess() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [dealershipName, setDealershipName] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
   const [phone, setPhone] = useState('');
@@ -18,13 +19,31 @@ export default function RequestSellerAccess() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+
+    const requiredFields: Array<[string, string]> = [
+      ['Email', email],
+      ['First name', firstName],
+      ['Last name', lastName],
+      ['Dealership name', dealershipName],
+      ['Phone', phone],
+    ];
+    const missingFields = requiredFields
+      .filter(([, value]) => !value.trim())
+      .map(([label]) => label);
+
+    if (missingFields.length > 0) {
+      setError(`Please complete the following required fields: ${missingFields.join(', ')}.`);
+      return;
+    }
+
     setSubmitting(true);
     try {
       await requestSellerAccess({
         email,
-        password,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         dealership: {
-          name: dealershipName.trim() || undefined,
+          name: dealershipName.trim(),
           licenseNumber: licenseNumber.trim() || undefined,
           phone,
         },
@@ -45,7 +64,7 @@ export default function RequestSellerAccess() {
           <p className="mt-2 text-sm">
             Your seller access request is pending approval. We&rsquo;ll email you at{' '}
             <span className="font-semibold text-white">{email}</span> once your dealership is
-            verified.
+            verified, with a link to create your password.
           </p>
         </div>
         <p className="mt-6 text-center text-sm text-blue-100">
@@ -70,19 +89,25 @@ export default function RequestSellerAccess() {
           onChange={(event) => setEmail(event.target.value)}
         />
         <Field
-          label="Password"
-          name="password"
-          type="password"
-          showPasswordToggle
-          autoComplete="new-password"
-          minLength={10}
+          label="First name"
+          name="firstName"
+          autoComplete="given-name"
           required
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          value={firstName}
+          onChange={(event) => setFirstName(event.target.value)}
         />
         <Field
-          label="Dealership name (optional)"
+          label="Last name"
+          name="lastName"
+          autoComplete="family-name"
+          required
+          value={lastName}
+          onChange={(event) => setLastName(event.target.value)}
+        />
+        <Field
+          label="Dealership name"
           name="dealershipName"
+          required
           value={dealershipName}
           onChange={(event) => setDealershipName(event.target.value)}
         />
@@ -109,6 +134,13 @@ export default function RequestSellerAccess() {
         <SubmitButton disabled={submitting}>
           {submitting ? 'Submitting…' : 'Request seller access'}
         </SubmitButton>
+        <p className="mt-4 text-center text-xs text-blue-100">
+          By submitting this request, you agree to our{' '}
+          <Link to="/terms" className="font-semibold text-white underline">
+            Terms &amp; Conditions
+          </Link>
+          .
+        </p>
       </form>
       <p className="mt-6 text-center text-sm text-blue-100">
         Already have an account?{' '}

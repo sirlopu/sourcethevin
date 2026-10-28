@@ -4,7 +4,8 @@ import { RoleShell } from '../components/RoleShell';
 import { ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth-context';
 import { listSubmissions, type SubmissionListItem } from '../lib/desk-api';
-import { statusBadge } from '../lib/submission-status';
+import { statusBadge, SUBMISSION_STATUSES, type SubmissionStatus } from '../lib/submission-status';
+import { vehicleLabel } from '../lib/vehicle-display';
 import { useStartSubmission } from '../lib/useStartSubmission';
 import { deleteSubmission } from '../lib/wizard-api';
 
@@ -15,6 +16,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [submissions, setSubmissions] = useState<SubmissionListItem[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<SubmissionStatus | 'all'>('all');
 
   useEffect(() => {
     let cancelled = false;
@@ -27,6 +29,11 @@ export default function Dashboard() {
       cancelled = true;
     };
   }, [authFetch]);
+
+  const filteredSubmissions =
+    statusFilter === 'all'
+      ? submissions
+      : submissions.filter((submission) => submission.status === statusFilter);
 
   async function handleStart() {
     setStarting(true);
@@ -56,7 +63,7 @@ export default function Dashboard() {
 
   return (
     <RoleShell title="Seller dashboard">
-      <div className="max-w-sm rounded-md bg-gradient-to-br from-blue-400 to-blue-600 p-5 text-white shadow-[0_4px_14px_rgba(10,75,168,.25)]">
+      <div className="max-w-lg rounded-md bg-gradient-to-br from-blue-400 to-blue-600 p-5 text-white shadow-[0_4px_14px_rgba(10,75,168,.25)]">
         <p className="text-xs font-semibold text-blue-100">Start a new</p>
         <p className="font-display text-xl font-bold">Trade-in submission</p>
         <button
@@ -78,54 +85,76 @@ export default function Dashboard() {
 
       {submissions.length > 0 && (
         <div className="mt-8 max-w-lg">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">
-            Recent submissions
-          </p>
-          <div className="divide-y divide-ink-200 rounded-md border border-ink-200 bg-white">
-            {submissions.map((item) => {
-              const vehicle =
-                [item.vehicle.year, item.vehicle.make, item.vehicle.model]
-                  .filter(Boolean)
-                  .join(' ') || 'Untitled trade-in';
-              const badge = statusBadge(item.status);
-              const isDraft = item.status === 'new';
-              return (
-                <div key={item._id} className="flex items-center text-sm hover:bg-ink-50">
-                  <Link
-                    to={
-                      isDraft
-                        ? `/wizard/${item._id}/${item.currentStep}`
-                        : `/submissions/${item._id}`
-                    }
-                    className="flex min-w-0 flex-1 items-center justify-between gap-3 p-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-ink-900">{vehicle}</p>
-                      <p className="font-mono text-xs text-ink-500">{item.referenceId}</p>
-                    </div>
-                    <span
-                      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}
-                    >
-                      ● {badge.label}
-                    </span>
-                  </Link>
-                  {isDraft && (
-                    <button
-                      type="button"
-                      disabled={deletingId === item._id}
-                      onClick={() => {
-                        void handleDelete(item, vehicle);
-                      }}
-                      aria-label={`Delete draft ${vehicle}`}
-                      className="mr-3 rounded px-2 py-1 text-xs font-semibold text-danger hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {deletingId === item._id ? 'Deleting…' : 'Delete'}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+              Recent submissions
+            </p>
+            <label className="flex items-center gap-2 text-xs font-semibold text-ink-600">
+              Filter by status
+              <select
+                value={statusFilter}
+                onChange={(event) =>
+                  setStatusFilter(event.target.value as SubmissionStatus | 'all')
+                }
+                className="rounded-md border-[1.5px] border-ink-300 bg-white px-2.5 py-1.5 text-sm font-normal text-ink-900 outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/15"
+              >
+                <option value="all">All statuses</option>
+                {SUBMISSION_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {statusBadge(status).label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
+          {filteredSubmissions.length === 0 ? (
+            <p className="rounded-md border border-ink-200 bg-white p-4 text-sm text-ink-500">
+              No recent submissions match this status.
+            </p>
+          ) : (
+            <div className="divide-y divide-ink-200 rounded-md border border-ink-200 bg-white">
+              {filteredSubmissions.map((item) => {
+                const vehicle = vehicleLabel(item.vehicle, 'Untitled trade-in');
+                const badge = statusBadge(item.status);
+                const isDraft = item.status === 'new';
+                return (
+                  <div key={item._id} className="flex items-center text-sm hover:bg-ink-50">
+                    <Link
+                      to={
+                        isDraft
+                          ? `/wizard/${item._id}/${item.currentStep}`
+                          : `/submissions/${item._id}`
+                      }
+                      className="flex min-w-0 flex-1 items-center justify-between gap-3 p-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-ink-900">{vehicle}</p>
+                        <p className="font-mono text-xs text-ink-500">{item.referenceId}</p>
+                      </div>
+                      <span
+                        className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}
+                      >
+                        ● {badge.label}
+                      </span>
+                    </Link>
+                    {isDraft && (
+                      <button
+                        type="button"
+                        disabled={deletingId === item._id}
+                        onClick={() => {
+                          void handleDelete(item, vehicle);
+                        }}
+                        aria-label={`Delete draft ${vehicle}`}
+                        className="mr-3 rounded px-2 py-1 text-xs font-semibold text-danger hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {deletingId === item._id ? 'Deleting…' : 'Delete'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </RoleShell>

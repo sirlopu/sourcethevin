@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { Router, type Request, type Response } from 'express';
 import { buildEmailHtml, sendEmail } from '../lib/email';
 import { hashPassword } from '../lib/password';
@@ -23,6 +23,8 @@ function paramId(req: Request): string {
 function serializeUser(user: UserDocument) {
   return {
     id: user._id.toString(),
+    firstName: user.firstName,
+    lastName: user.lastName,
     email: user.email,
     role: user.role,
     status: user.status,
@@ -70,7 +72,7 @@ adminRouter.post('/users', async (req: Request, res: Response) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
-  const { email, role, dealership } = parsed.data;
+  const { firstName, lastName, email, role, dealership } = parsed.data;
 
   const existing = await User.findOne({ email });
   if (existing) {
@@ -84,6 +86,8 @@ adminRouter.post('/users', async (req: Request, res: Response) => {
   // Admin-created accounts are active immediately — the pending-approval pipeline is only for
   // seller self-registration.
   const user = await User.create({
+    firstName,
+    lastName,
     email,
     passwordHash,
     role,
@@ -214,8 +218,22 @@ adminRouter.post('/seller-requests/:id/approve', async (req: Request, res: Respo
     res.status(409).json({ error: 'This account is not a pending seller request' });
     return;
   }
+  const token = randomBytes(32).toString('hex');
   user.status = 'active';
+  user.passwordResetTokenHash = createHash('sha256').update(token).digest('hex');
+  user.passwordResetExpiresAt = new Date(Date.now() + 60 * 60 * 1000);
   await user.save();
+
+  const webBaseUrl = process.env.WEB_BASE_URL || 'http://localhost:5173';
+  const setupUrl = `${webBaseUrl}/reset-password?token=${token}`;
+  const subject = 'Your seller account is approved';
+  const body = `Your seller account has been approved. Create your password using the secure link below (expires in 1 hour):\n${setupUrl}`;
+  void sendEmail({
+    to: user.email,
+    subject,
+    html: buildEmailHtml(subject, body),
+    text: body,
+  }).catch((err) => console.error(`[admin:approval email] failed for ${user.email}`, err));
 
   await notifySellerRequestApproved(user);
 

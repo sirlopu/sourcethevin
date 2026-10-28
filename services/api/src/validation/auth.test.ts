@@ -2,30 +2,36 @@ import { describe, expect, it } from 'vitest';
 import { changePasswordSchema, registerSellerRequestSchema } from './auth';
 
 describe('registerSellerRequestSchema', () => {
-  it('accepts omitted dealership name and license number', () => {
+  it('accepts names and dealership details without a password', () => {
     const result = registerSellerRequestSchema.safeParse({
       email: 'seller@example.com',
-      password: 'a-long-enough-password',
-      dealership: { phone: '555-0100' },
+      firstName: 'Sam',
+      lastName: 'Seller',
+      dealership: { name: 'Example Motors', phone: '555-0100' },
     });
 
     expect(result.success).toBe(true);
   });
 
-  it('normalizes blank dealership name and license number to omitted fields', () => {
+  it('trims names and dealership name and omits a blank license number', () => {
     const result = registerSellerRequestSchema.parse({
       email: 'seller@example.com',
-      password: 'a-long-enough-password',
-      dealership: { name: '   ', licenseNumber: '', phone: '555-0100' },
+      firstName: ' Sam ',
+      lastName: ' Seller ',
+      dealership: { name: ' Example Motors ', licenseNumber: '', phone: '555-0100' },
     });
 
-    expect(result.dealership).toEqual({ phone: '555-0100' });
+    expect(result).toEqual({
+      email: 'seller@example.com',
+      firstName: 'Sam',
+      lastName: 'Seller',
+      dealership: { name: 'Example Motors', phone: '555-0100' },
+    });
   });
 
-  it('continues to require a phone number', () => {
+  it('requires names, dealership name, and phone number', () => {
     const result = registerSellerRequestSchema.safeParse({
       email: 'seller@example.com',
-      password: 'a-long-enough-password',
       dealership: {},
     });
 

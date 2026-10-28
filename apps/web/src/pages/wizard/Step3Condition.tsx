@@ -7,10 +7,14 @@ import { ApiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
 import { useAutosave } from '../../lib/useAutosave';
 import { patchSubmission } from '../../lib/wizard-api';
-import type { Condition } from '@sourcethevin/shared';
-
+import {
+  WARNING_LIGHTS_OPTIONS,
+  WARNING_LIGHT_LABELS,
+  type Condition,
+  type WarningLightsOption,
+} from '@sourcethevin/shared';
 type RunsAndDrives = NonNullable<Condition['runsAndDrives']>;
-type WarningLights = NonNullable<Condition['warningLights']>;
+type WarningLights = WarningLightsOption[];
 type AccidentHistory = NonNullable<Condition['accidentHistory']>;
 type ConditionRating = NonNullable<Condition['tireCondition']>;
 type CosmeticIssue = Condition['cosmeticIssues'][number];
@@ -26,7 +30,9 @@ export default function Step3Condition({ submission, onSaved, onContinue }: Wiza
   const { authFetch } = useAuth();
   const c = submission.condition;
   const [runsAndDrives, setRunsAndDrives] = useState<RunsAndDrives | null>(c.runsAndDrives ?? null);
-  const [warningLights, setWarningLights] = useState<WarningLights | null>(c.warningLights ?? null);
+  const [warningLights, setWarningLights] = useState<WarningLights>(
+    normalizeWarningLights(c.warningLights),
+  );
   const [warningLightsDescription, setWarningLightsDescription] = useState(
     c.warningLightsDescription ?? '',
   );
@@ -45,6 +51,20 @@ export default function Step3Condition({ submission, onSaved, onContinue }: Wiza
     setCosmeticIssues((current) =>
       current.includes(value) ? current.filter((v) => v !== value) : [...current, value],
     );
+  }
+
+  function normalizeWarningLights(value: WarningLightsOption[] | undefined): WarningLights {
+    if (Array.isArray(value)) return value;
+    return [];
+  }
+
+  function toggleWarningLight(value: Exclude<WarningLightsOption, 'none'>) {
+    setWarningLights((current) => {
+      const withoutNone = current.filter((v) => v !== 'none');
+      return withoutNone.includes(value)
+        ? withoutNone.filter((v) => v !== value)
+        : [...withoutNone, value];
+    });
   }
 
   const conditionPatch = {
@@ -97,17 +117,28 @@ export default function Step3Condition({ submission, onSaved, onContinue }: Wiza
       />
 
       <div>
-        <OptionGroup
-          label="Warning lights on?"
-          value={warningLights}
-          onChange={setWarningLights}
-          options={[
-            { value: 'none', label: 'None' },
-            { value: 'check_engine', label: 'Check engine', tone: 'warning' },
-            { value: 'other', label: 'Other' },
-          ]}
-        />
-        {warningLights === 'other' && (
+        <span className="mb-1.5 block text-xs font-semibold text-ink-700">Warning lights on?</span>
+        <div className="flex flex-wrap gap-2">
+          {WARNING_LIGHTS_OPTIONS.filter((value) => value !== 'none').map((value) => {
+            const label = WARNING_LIGHT_LABELS[value];
+            const selected = warningLights.includes(value);
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => toggleWarningLight(value)}
+                className={`rounded-full border-[1.5px] px-3 py-1.5 text-xs font-semibold transition ${
+                  selected
+                    ? 'border-blue-500 bg-blue-500/10 text-blue-600'
+                    : 'border-ink-300 bg-white text-ink-700 hover:border-ink-500'
+                }`}
+              >
+                {label} {selected && '✓'}
+              </button>
+            );
+          })}
+        </div>
+        {warningLights.includes('other') && (
           <WizardField
             label="Which warning light?"
             name="warningLightsDescription"
@@ -119,7 +150,7 @@ export default function Step3Condition({ submission, onSaved, onContinue }: Wiza
       </div>
 
       <WizardSelect
-        label="Structural / accident history"
+        label="Accident history"
         name="accidentHistory"
         value={accidentHistory}
         onChange={(e) => setAccidentHistory(e.target.value as AccidentHistory)}

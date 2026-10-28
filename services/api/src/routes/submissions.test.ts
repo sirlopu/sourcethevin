@@ -13,7 +13,15 @@ vi.mock('../middleware/requireAuth', () => ({
 }));
 
 vi.mock('../models/Submission', () => ({
-  SUBMISSION_STATUSES: ['new', 'submitted', 'offer_sent', 'accepted', 'declined'],
+  SUBMISSION_STATUSES: [
+    'new',
+    'submitted',
+    'offer_sent',
+    'in_negotiation',
+    'accepted',
+    'declined',
+    'closed',
+  ],
   Submission: { findById: findSubmissionById },
 }));
 
@@ -36,6 +44,8 @@ function createTestApp(role: 'trade_desk' | 'seller' = 'trade_desk') {
     req.user = {
       id: 'desk-user',
       email: 'desk@example.com',
+      firstName: 'Morgan',
+      lastName: 'Lee',
       role,
       tenantId: 'tenant-1',
       status: 'active',
@@ -84,6 +94,11 @@ describe('PUT /submissions/:id/valuation internal notes', () => {
     const [filter, update] = findValuationOneAndUpdate.mock.calls[0] ?? [];
     expect(filter).toEqual({ submissionId: 'submission-1', tenantId: 'tenant-1' });
     expect(update.$push.internalNoteHistory.$each[0].text).toBe('New note');
+    expect(update.$push.internalNoteHistory.$each[0]).toMatchObject({
+      authorFirstName: 'Morgan',
+      authorLastName: 'Lee',
+      authorEmail: 'desk@example.com',
+    });
     expect(update.$push.internalNoteHistory.$sort).toEqual({ createdAt: -1 });
     expect(response.body.internalNoteHistory[0].text).toBe('New note');
   });

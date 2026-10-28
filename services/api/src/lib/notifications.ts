@@ -86,7 +86,7 @@ export async function notifySellerRequestApproved(seller: UserDocument): Promise
     type: 'seller_request_approved',
     recipients: [seller],
     title: 'Your account was approved',
-    body: 'Your seller account was approved. You can now sign in.',
+    body: 'Your seller account was approved. Check your email for a secure link to create your password.',
   });
 
   const admins = await getAdminRecipients(seller.tenantId);
@@ -95,7 +95,7 @@ export async function notifySellerRequestApproved(seller: UserDocument): Promise
     type: 'seller_request_approved',
     recipients: admins,
     title: 'Seller account approved',
-    body: `${seller.email} was approved. They can now sign in.`,
+    body: `${seller.email} was approved and was emailed a secure link to create a password.`,
   });
 }
 

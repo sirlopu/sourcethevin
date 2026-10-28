@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent } from 'react';
-import { MIN_REQUIRED_PHOTOS, PHOTO_SLOTS, type PhotoSlot } from '@sourcethevin/shared';
+import { PHOTO_SLOTS, type PhotoSlot } from '@sourcethevin/shared';
 import type { WizardStepProps } from '../../components/wizard/WizardShell';
 import { ApiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
@@ -22,7 +22,7 @@ export default function Step5Photos({ submission, onSaved, onContinue }: WizardS
   const photoBySlot = new Map(submission.photos.map((photo) => [photo.slot, photo]));
   const capturedCount = submission.photos.length;
   const nextSlot = PHOTO_SLOTS.find((slot) => !photoBySlot.has(slot.key));
-  const canReview = capturedCount >= MIN_REQUIRED_PHOTOS;
+  const canReview = true;
 
   function openPickerFor(slot: PhotoSlot) {
     setError(null);

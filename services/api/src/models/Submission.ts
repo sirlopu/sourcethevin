@@ -14,8 +14,10 @@ export const SUBMISSION_STATUSES = [
   'new',
   'submitted',
   'offer_sent',
+  'in_negotiation',
   'accepted',
   'declined',
+  'closed',
 ] as const;
 export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
 
@@ -48,7 +50,7 @@ const vehicleSchema = new Schema(
 const conditionSchema = new Schema(
   {
     runsAndDrives: { type: String, enum: RUNS_AND_DRIVES_OPTIONS },
-    warningLights: { type: String, enum: WARNING_LIGHTS_OPTIONS },
+    warningLights: { type: [String], enum: WARNING_LIGHTS_OPTIONS, default: [] },
     warningLightsDescription: String,
     accidentHistory: { type: String, enum: ACCIDENT_HISTORY_OPTIONS },
     cosmeticIssues: { type: [{ type: String, enum: COSMETIC_ISSUE_OPTIONS }], default: [] },

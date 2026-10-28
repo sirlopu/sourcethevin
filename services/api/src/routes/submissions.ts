@@ -1,7 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import {
-  MIN_REQUIRED_PHOTOS,
   internalNoteInputSchema,
   messageCreateInputSchema,
   offerCreateInputSchema,
@@ -14,6 +13,7 @@ import {
 import { computeRecommendedMaxAcquisition, formatCurrency } from '../lib/valuation';
 import { buildOfferSentDetail } from '../lib/offers';
 import {
+  buildSubmissionPhotoAssetFolder,
   buildSubmissionPhotoPublicId,
   createSignedUpload,
   isValidCloudinaryUrl,
@@ -38,6 +38,7 @@ const SELLER_VISIBLE_AUDIT_ACTIONS = new Set([
   'offer_accepted',
   'offer_declined',
   'offer_countered',
+  'submission_closed',
 ]);
 
 export const submissionsRouter = Router();
@@ -161,7 +162,7 @@ submissionsRouter.get(
       filter.status = status;
     } else if (req.user!.role !== 'seller') {
       // No explicit status filter: show the full queue across every post-submission status
-      // (submitted, offer_sent, accepted, declined) but never a seller's in-progress draft.
+      // but never a seller's in-progress draft.
       filter.status = { $ne: 'new' };
     }
     if (dateFrom || dateTo) {
@@ -273,7 +274,11 @@ submissionsRouter.post(
 
     const publicId = buildSubmissionPhotoPublicId(submission.referenceId, parsed.data.slot);
     try {
-      res.status(200).json(createSignedUpload(publicId));
+      res
+        .status(200)
+        .json(
+          createSignedUpload(publicId, buildSubmissionPhotoAssetFolder(submission.referenceId)),
+        );
     } catch {
       res.status(500).json({ error: 'Photo upload is not configured' });
     }
@@ -339,10 +344,6 @@ submissionsRouter.post(
     }
     if (submission.status !== 'new') {
       res.status(409).json({ error: 'This submission has already been submitted' });
-      return;
-    }
-    if (submission.photos.length < MIN_REQUIRED_PHOTOS) {
-      res.status(400).json({ error: `At least ${MIN_REQUIRED_PHOTOS} photos are required` });
       return;
     }
 
@@ -426,7 +427,15 @@ submissionsRouter.post(
         $setOnInsert: { submissionId: submission._id, tenantId: submission.tenantId },
         $push: {
           internalNoteHistory: {
-            $each: [{ text: parsed.data.text, createdAt: new Date() }],
+            $each: [
+              {
+                text: parsed.data.text,
+                createdAt: new Date(),
+                authorFirstName: req.user!.firstName,
+                authorLastName: req.user!.lastName,
+                authorEmail: req.user!.email,
+              },
+            ],
             $sort: { createdAt: -1 },
           },
         },
@@ -539,7 +548,11 @@ submissionsRouter.post(
       res.status(409).json({ error: 'This submission has not been submitted yet' });
       return;
     }
-    if (submission.status === 'accepted' || submission.status === 'declined') {
+    if (
+      submission.status === 'accepted' ||
+      submission.status === 'declined' ||
+      submission.status === 'closed'
+    ) {
       res.status(409).json({ error: 'This trade has already been resolved' });
       return;
     }
@@ -606,7 +619,11 @@ submissionsRouter.post(
       res.status(404).json({ error: 'Submission not found' });
       return;
     }
-    if (submission.status === 'accepted' || submission.status === 'declined') {
+    if (
+      submission.status === 'accepted' ||
+      submission.status === 'declined' ||
+      submission.status === 'closed'
+    ) {
       res.status(409).json({ error: 'This trade has already been resolved' });
       return;
     }
@@ -636,6 +653,56 @@ submissionsRouter.post(
       recipients: seller ? [seller] : [],
       title: 'Trade ended',
       body: `Trade desk ended the trade for submission ${submission.referenceId}.`,
+      link: `/submissions/${submission._id}`,
+    });
+
+    res.status(200).json(submission);
+  },
+);
+
+submissionsRouter.post(
+  '/:id/close',
+  requireRole('trade_desk'),
+  async (req: Request, res: Response) => {
+    const submission = await loadTenantSubmission(paramId(req), req.user!.tenantId);
+    if (!submission) {
+      res.status(404).json({ error: 'Submission not found' });
+      return;
+    }
+    if (
+      submission.status === 'accepted' ||
+      submission.status === 'declined' ||
+      submission.status === 'closed'
+    ) {
+      res.status(409).json({ error: 'This trade has already been resolved' });
+      return;
+    }
+
+    // Close out any live offer so it can't later be accepted/declined once the trade is closed.
+    await Offer.updateMany(
+      { submissionId: submission._id, status: 'pending' },
+      { status: 'declined', respondedAt: new Date(), respondedBy: req.user!.id },
+    );
+
+    submission.status = 'closed';
+    await submission.save();
+
+    await AuditLog.create({
+      tenantId: submission.tenantId,
+      submissionId: submission._id,
+      actorId: req.user!.id,
+      action: 'submission_closed',
+      detail: 'Trade desk ended the trade',
+    });
+
+    const seller = await getSeller(submission);
+    await notify({
+      tenantId: submission.tenantId,
+      submissionId: submission._id,
+      type: 'trade_closed',
+      recipients: seller ? [seller] : [],
+      title: 'Trade closed',
+      body: `Trade desk closed the trade for submission ${submission.referenceId}.`,
       link: `/submissions/${submission._id}`,
     });
 

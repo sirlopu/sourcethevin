@@ -328,6 +328,8 @@ function InviteUserForm({
   onInvited: (email: string, password: string) => void;
   onCancel: () => void;
 }) {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<Role>('trade_desk');
   const [dealershipName, setDealershipName] = useState('');
@@ -342,7 +344,9 @@ function InviteUserForm({
     setSubmitting(true);
     try {
       const result = await inviteUser(authFetch, {
-        email,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
         role,
         dealership:
           role === 'seller'
@@ -369,9 +373,32 @@ function InviteUserForm({
       <p className="text-sm font-bold text-navy-900">Invite user</p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="block">
+          <span className="text-xs font-semibold text-ink-700">First name</span>
+          <input
+            type="text"
+            autoComplete="given-name"
+            required
+            value={firstName}
+            onChange={(event) => setFirstName(event.target.value)}
+            className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs font-semibold text-ink-700">Last name</span>
+          <input
+            type="text"
+            autoComplete="family-name"
+            required
+            value={lastName}
+            onChange={(event) => setLastName(event.target.value)}
+            className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
+          />
+        </label>
+        <label className="block">
           <span className="text-xs font-semibold text-ink-700">Email</span>
           <input
             type="email"
+            autoComplete="email"
             required
             value={email}
             onChange={(event) => setEmail(event.target.value)}

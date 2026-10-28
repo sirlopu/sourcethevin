@@ -21,7 +21,7 @@ vi.mock('../../lib/auth-context', () => ({
 vi.mock('../../components/MessageThread', () => ({ default: () => null }));
 
 vi.mock('../../lib/desk-api', () => ({
-  declineSubmission: vi.fn(),
+  closeSubmission: vi.fn(),
   getSubmissionDetail: mocks.getSubmissionDetail,
   overrideValuation: vi.fn(),
   appendInternalNote: mocks.appendInternalNote,
@@ -56,7 +56,13 @@ const submission: SubmissionListItem = {
     recommendedMaxAcquisition: 0,
     buyerOverride: null,
     internalNoteHistory: [
-      { text: 'Older note', createdAt: '2026-10-01T12:00:00.000Z' },
+      {
+        text: 'Older note',
+        createdAt: '2026-10-01T12:00:00.000Z',
+        authorFirstName: 'Morgan',
+        authorLastName: 'Lee',
+        authorEmail: 'morgan@example.com',
+      },
       { text: 'Latest existing note', createdAt: '2026-10-02T12:00:00.000Z' },
     ],
   },
@@ -92,7 +98,13 @@ beforeEach(() => {
   mocks.appendInternalNote.mockResolvedValue({
     ...submission.valuation,
     internalNoteHistory: [
-      { text: 'New saved note', createdAt: '2026-10-03T12:00:00.000Z' },
+      {
+        text: 'New saved note',
+        createdAt: '2026-10-03T12:00:00.000Z',
+        authorFirstName: 'Jordan',
+        authorLastName: 'Doe',
+        authorEmail: 'jordan@example.com',
+      },
       ...(submission.valuation?.internalNoteHistory ?? []),
     ],
   });
@@ -108,6 +120,8 @@ describe('SubmissionDetail internal notes', () => {
     const savedNotes = screen.getByRole('group', { name: 'Saved notes' });
     expect(within(savedNotes).getByText('Latest existing note')).toBeInTheDocument();
     expect(within(savedNotes).getByText('Older note')).toBeInTheDocument();
+    expect(within(savedNotes).getByText('Morgan L.')).toBeInTheDocument();
+    expect(within(savedNotes).getByText('Unknown user')).toBeInTheDocument();
     expect(editor).toHaveValue('');
     const saveButton = screen.getByRole('button', { name: 'Save notes' });
     expect(
@@ -125,12 +139,35 @@ describe('SubmissionDetail internal notes', () => {
     await user.click(screen.getByRole('button', { name: 'Save notes' }));
 
     expect(await within(savedNotes).findByText('New saved note')).toBeInTheDocument();
+    expect(within(savedNotes).getByText('Jordan D.')).toBeInTheDocument();
     expect(editor).toHaveValue('');
     expect(mocks.appendInternalNote).toHaveBeenCalledWith(
       mocks.authFetch,
       'submission-1',
       'New saved note',
     );
+  });
+
+  it('falls back to the author email when a complete name is unavailable', async () => {
+    mocks.getSubmissionDetail.mockResolvedValueOnce({
+      ...submission,
+      valuation: {
+        ...submission.valuation!,
+        internalNoteHistory: [
+          {
+            text: 'Email author note',
+            createdAt: '2026-10-03T12:00:00.000Z',
+            authorFirstName: 'Jordan',
+            authorEmail: 'jordan@example.com',
+          },
+        ],
+      },
+    });
+    renderPage();
+
+    const savedNotes = await screen.findByRole('group', { name: 'Saved notes' });
+    expect(await within(savedNotes).findByText('jordan@example.com')).toBeInTheDocument();
+    expect(within(savedNotes).queryByText('Jordan')).not.toBeInTheDocument();
   });
 
   it('keeps the draft and existing history visible when saving fails', async () => {
@@ -162,5 +199,58 @@ describe('SubmissionDetail offer status', () => {
     const status = await screen.findByRole('status');
     expect(status).toHaveTextContent('expired');
     expect(status).toHaveClass('bg-danger-bg', 'text-danger');
+  });
+});
+
+describe('SubmissionDetail closed submission', () => {
+  const closedSubmission: SubmissionListItem = {
+    ...submission,
+    status: 'closed',
+  };
+
+  it('removes the offer card and shows a closed placeholder when a latest offer exists', async () => {
+    mocks.getSubmissionDetail.mockResolvedValue(closedSubmission);
+    mocks.getLatestOffer.mockResolvedValue(expiredOffer);
+    renderPage();
+
+    await screen.findByText('Trade closed');
+    expect(screen.getByText(/No further offers or counters are possible/)).toBeInTheDocument();
+    expect(screen.queryByText('v1 · $1,000')).not.toBeInTheDocument();
+  });
+
+  it('shows the closed placeholder instead of "No offer sent yet." when there is no offer', async () => {
+    mocks.getSubmissionDetail.mockResolvedValue(closedSubmission);
+    mocks.getLatestOffer.mockResolvedValue(null);
+    renderPage();
+
+    await screen.findByText('Trade closed');
+    expect(screen.getByText(/No further offers or counters are possible/)).toBeInTheDocument();
+    expect(screen.queryByText('No offer sent yet.')).not.toBeInTheDocument();
+  });
+});
+
+describe('SubmissionDetail in negotiation (seller declined desk offer)', () => {
+  const declinedDeskOffer: OfferRecord = {
+    _id: 'offer-1',
+    submissionId: submission._id,
+    version: 1,
+    amount: 1000,
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    terms: '',
+    notes: '',
+    status: 'declined',
+    createdByRole: 'trade_desk',
+    createdBy: 'desk-user-1',
+    createdAt: '2026-10-01T00:00:00.000Z',
+  };
+
+  it('keeps the send-offer form visible so the desk can submit a new offer', async () => {
+    mocks.getSubmissionDetail.mockResolvedValue({ ...submission, status: 'in_negotiation' });
+    mocks.getLatestOffer.mockResolvedValue(declinedDeskOffer);
+    renderPage();
+
+    await screen.findByText('Send offer to seller');
+    expect(screen.getByRole('button', { name: 'Send offer to seller' })).toBeInTheDocument();
+    expect(screen.queryByText(/Trade closed/)).not.toBeInTheDocument();
   });
 });

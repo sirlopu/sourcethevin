@@ -4,6 +4,7 @@ import type { WizardStepProps } from '../../components/wizard/WizardShell';
 import { ApiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
 import { useAutosave } from '../../lib/useAutosave';
+import { vehicleLabel } from '../../lib/vehicle-display';
 import { patchSubmission } from '../../lib/wizard-api';
 
 export default function Step2VehicleInfo({ submission, onSaved, onContinue }: WizardStepProps) {
@@ -51,7 +52,7 @@ export default function Step2VehicleInfo({ submission, onSaved, onContinue }: Wi
     }
   }
 
-  const heading = [year, make, model, trim].filter(Boolean).join(' ') || 'Vehicle info';
+  const heading = vehicleLabel({ year, make, model, trim }, 'Vehicle info');
 
   return (
     <form onSubmit={handleContinue} noValidate>
