@@ -181,6 +181,8 @@ describe('App', () => {
   it('serves the terms page at /terms', async () => {
     renderApp('/terms');
 
-    expect(await screen.findByRole('heading', { name: 'Terms & Conditions' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'TechCatalyst Terms of Service' }),
+    ).toBeInTheDocument();
   });
 });

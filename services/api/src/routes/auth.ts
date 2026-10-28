@@ -193,6 +193,19 @@ authRouter.post('/refresh', async (req: Request, res: Response) => {
   res.status(200).json({ accessToken });
 });
 
+authRouter.post('/logout', async (req: Request, res: Response) => {
+  const token = req.cookies?.[REFRESH_COOKIE_NAME] as string | undefined;
+  if (token) {
+    const hash = hashRefreshToken(token);
+    await User.updateOne(
+      { refreshTokenHash: hash },
+      { refreshTokenHash: null, refreshTokenExpiresAt: null },
+    );
+  }
+  clearRefreshCookie(res);
+  res.status(204).send();
+});
+
 function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
