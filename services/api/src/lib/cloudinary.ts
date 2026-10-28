@@ -5,6 +5,7 @@ export interface SignedUploadParams {
   apiKey: string;
   timestamp: number;
   publicId: string;
+  assetFolder: string;
   overwrite: true;
   signature: string;
   uploadUrl: string;
@@ -20,10 +21,17 @@ function getCloudinaryConfig() {
   return { cloudName, apiKey, apiSecret };
 }
 
-export function createSignedUpload(publicId: string): SignedUploadParams {
+export function createSignedUpload(publicId: string, assetFolder: string): SignedUploadParams {
   const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
   const timestamp = Math.floor(Date.now() / 1000);
-  const paramsToSign = { timestamp, public_id: publicId, overwrite: true };
+  // The account uses dynamic folders, where the public_id path does not place the asset in a
+  // Media Library folder — asset_folder does.
+  const paramsToSign = {
+    timestamp,
+    public_id: publicId,
+    asset_folder: assetFolder,
+    overwrite: true,
+  };
 
   const signature = cloudinary.utils.api_sign_request(paramsToSign, apiSecret);
 
@@ -32,10 +40,16 @@ export function createSignedUpload(publicId: string): SignedUploadParams {
     apiKey,
     timestamp,
     publicId,
+    assetFolder,
     overwrite: true,
     signature,
     uploadUrl: `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
   };
+}
+
+/** Media Library folder holding one trade's photos: sourcethevin/<referenceId>. */
+export function buildSubmissionPhotoAssetFolder(referenceId: string): string {
+  return `sourcethevin/${referenceId}`;
 }
 
 /** Namespaces every submission photo under sourcethevin/<referenceId>/<slot> in Cloudinary. */

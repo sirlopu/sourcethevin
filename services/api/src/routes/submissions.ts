@@ -13,6 +13,7 @@ import {
 import { computeRecommendedMaxAcquisition, formatCurrency } from '../lib/valuation';
 import { buildOfferSentDetail } from '../lib/offers';
 import {
+  buildSubmissionPhotoAssetFolder,
   buildSubmissionPhotoPublicId,
   createSignedUpload,
   isValidCloudinaryUrl,
@@ -273,7 +274,11 @@ submissionsRouter.post(
 
     const publicId = buildSubmissionPhotoPublicId(submission.referenceId, parsed.data.slot);
     try {
-      res.status(200).json(createSignedUpload(publicId));
+      res
+        .status(200)
+        .json(
+          createSignedUpload(publicId, buildSubmissionPhotoAssetFolder(submission.referenceId)),
+        );
     } catch {
       res.status(500).json({ error: 'Photo upload is not configured' });
     }

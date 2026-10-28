@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  buildSubmissionPhotoAssetFolder,
   buildSubmissionPhotoPublicId,
   createSignedUpload,
   isValidCloudinaryUrl,
@@ -14,15 +15,16 @@ beforeEach(() => {
 
 describe('createSignedUpload', () => {
   it('produces a signature matching the Cloudinary signing algorithm', () => {
-    const signed = createSignedUpload('submissions/abc123/front');
+    const signed = createSignedUpload('submissions/abc123/front', 'sourcethevin/abc123');
 
     const expectedSignature = createHash('sha1')
       .update(
-        `overwrite=true&public_id=submissions/abc123/front&timestamp=${signed.timestamp}test-secret`,
+        `asset_folder=sourcethevin/abc123&overwrite=true&public_id=submissions/abc123/front&timestamp=${signed.timestamp}test-secret`,
       )
       .digest('hex');
 
     expect(signed.signature).toBe(expectedSignature);
+    expect(signed.assetFolder).toBe('sourcethevin/abc123');
     expect(signed.cloudName).toBe('demo-cloud');
     expect(signed.apiKey).toBe('test-key');
     expect(signed.uploadUrl).toBe('https://api.cloudinary.com/v1_1/demo-cloud/image/upload');
@@ -30,7 +32,7 @@ describe('createSignedUpload', () => {
 
   it('throws when Cloudinary env vars are missing', () => {
     delete process.env.CLOUDINARY_API_SECRET;
-    expect(() => createSignedUpload('submissions/abc123/front')).toThrow(
+    expect(() => createSignedUpload('submissions/abc123/front', 'sourcethevin/abc123')).toThrow(
       'Cloudinary environment variables are not set',
     );
   });
@@ -81,5 +83,11 @@ describe('buildSubmissionPhotoPublicId', () => {
     const first = buildSubmissionPhotoPublicId('STV-2026-00001', 'front');
     const second = buildSubmissionPhotoPublicId('STV-2026-00002', 'front');
     expect(first).not.toBe(second);
+  });
+});
+
+describe('buildSubmissionPhotoAssetFolder', () => {
+  it('places the trade photos in the sourcethevin/<referenceId> Media Library folder', () => {
+    expect(buildSubmissionPhotoAssetFolder('STV-2026-00001')).toBe('sourcethevin/STV-2026-00001');
   });
 });

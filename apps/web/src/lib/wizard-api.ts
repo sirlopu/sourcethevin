@@ -79,6 +79,7 @@ export interface SignedPhotoUpload {
   apiKey: string;
   timestamp: number;
   publicId: string;
+  assetFolder: string;
   overwrite: true;
   signature: string;
   uploadUrl: string;
@@ -113,6 +114,7 @@ export async function uploadToCloudinary(
   form.append('api_key', signed.apiKey);
   form.append('timestamp', String(signed.timestamp));
   form.append('public_id', signed.publicId);
+  form.append('asset_folder', signed.assetFolder);
   form.append('overwrite', 'true');
   form.append('signature', signed.signature);
 
