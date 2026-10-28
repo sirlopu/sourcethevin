@@ -26,7 +26,29 @@ export const RUNS_AND_DRIVES_OPTIONS = ['yes', 'starts_only', 'no'] as const;
 export const runsAndDrivesSchema = z.enum(RUNS_AND_DRIVES_OPTIONS);
 
 export const WARNING_LIGHTS_OPTIONS = ['none', 'check_engine', 'abs', 'airbags', 'other'] as const;
+export type WarningLightsOption = (typeof WARNING_LIGHTS_OPTIONS)[number];
 export const warningLightsSchema = z.enum(WARNING_LIGHTS_OPTIONS);
+
+export const WARNING_LIGHT_LABELS: Record<WarningLightsOption, string> = {
+  none: 'None',
+  check_engine: 'Engine Light',
+  abs: 'ABS',
+  airbags: 'Airbags',
+  other: 'Other',
+};
+
+export function formatWarningLights(
+  warningLights: WarningLightsOption[],
+  warningLightsDescription: string | null | undefined,
+): string {
+  if (warningLights.length === 0) return '';
+  if (warningLights.includes('other') && warningLightsDescription?.trim()) {
+    const specific = warningLights.filter((w) => w !== 'other');
+    const labels = specific.map((w) => WARNING_LIGHT_LABELS[w]);
+    return labels.length > 0 ? `${labels.join(', ')}, ${warningLightsDescription.trim()}` : warningLightsDescription.trim();
+  }
+  return warningLights.map((w) => WARNING_LIGHT_LABELS[w]).join(', ');
+}
 
 export const ACCIDENT_HISTORY_OPTIONS = ['clean', 'repaired', 'unrepaired'] as const;
 export const accidentHistorySchema = z.enum(ACCIDENT_HISTORY_OPTIONS);
@@ -44,7 +66,7 @@ export const cosmeticIssueSchema = z.enum(COSMETIC_ISSUE_OPTIONS);
 
 export const conditionSchema = z.object({
   runsAndDrives: runsAndDrivesSchema.nullable(),
-  warningLights: warningLightsSchema.nullable(),
+  warningLights: z.array(warningLightsSchema).default([]),
   warningLightsDescription: z.string().trim().max(500).nullable(),
   accidentHistory: accidentHistorySchema.nullable(),
   cosmeticIssues: z.array(cosmeticIssueSchema),

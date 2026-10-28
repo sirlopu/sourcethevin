@@ -22,7 +22,7 @@ import {
 import { formatRelativeAge } from '../../lib/relative-time';
 import { statusBadge } from '../../lib/submission-status';
 import { vehicleLabel } from '../../lib/vehicle-display';
-import { photoSlotLabel } from '@sourcethevin/shared';
+import { photoSlotLabel, formatWarningLights } from '@sourcethevin/shared';
 import type { SubmissionPhoto } from '../../lib/wizard-api';
 
 const EMPTY_EXPENSES: EstimatedExpenses = {
@@ -176,7 +176,7 @@ export default function SubmissionDetail() {
                 }
               />
               <Row label="Runs & drives" value={submission.condition.runsAndDrives ?? '—'} />
-              <Row label="Warning lights" value={submission.condition.warningLights ?? '—'} />
+              <Row label="Warning lights" value={formatWarningLights(submission.condition.warningLights ?? [], submission.condition.warningLightsDescription) ?? '—'} />
               <Row label="Structural" value={submission.condition.accidentHistory ?? '—'} />
               <Row
                 label="Cosmetic"

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PHOTO_SLOTS } from '@sourcethevin/shared';
+import { PHOTO_SLOTS, formatWarningLights } from '@sourcethevin/shared';
 import type { WizardStepProps } from '../../components/wizard/WizardShell';
 import { ApiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
@@ -56,7 +56,15 @@ export default function Step6Review({ submission, onSaved }: WizardStepProps) {
 
         <SummaryCard title="Condition">
           <SummaryRow label="Runs & drives" value={submission.condition.runsAndDrives ?? '—'} />
-          <SummaryRow label="Warning lights" value={submission.condition.warningLights ?? '—'} />
+          <SummaryRow
+            label="Warning lights"
+            value={
+              formatWarningLights(
+                submission.condition.warningLights ?? [],
+                submission.condition.warningLightsDescription,
+              ) ?? '—'
+            }
+          />
           <SummaryRow
             label="Accident history"
             value={submission.condition.accidentHistory ?? '—'}
