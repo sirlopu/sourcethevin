@@ -102,9 +102,7 @@ describe('SubmissionView offer expiry', () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Accept offer' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Counter' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Counter' })).not.toBeInTheDocument();
   });
 
   it('keeps response controls available before the offer expires', async () => {
@@ -143,9 +141,7 @@ describe('SubmissionView offer expiry', () => {
     expect(await screen.findByText(/Offer expired/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Accept offer' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Counter' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Counter' })).not.toBeInTheDocument();
   });
 
   it('allows a new counter after the desk declines a seller counter, even after expiry', async () => {
@@ -176,9 +172,7 @@ describe('SubmissionView offer expiry', () => {
     renderPage();
 
     expect(await screen.findByText('Trade closed')).toBeInTheDocument();
-    expect(
-      screen.getByText(/No further offers or counters are possible/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/No further offers or counters are possible/)).toBeInTheDocument();
     expect(screen.queryByText('Trade declined')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Counter' })).not.toBeInTheDocument();
   });

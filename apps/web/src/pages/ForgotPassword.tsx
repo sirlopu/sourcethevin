@@ -33,7 +33,9 @@ export default function ForgotPassword() {
     <AuthCard>
       {success ? (
         <div>
-          <p className="mb-6 text-center text-sm text-blue-100">Check your email for a reset link</p>
+          <p className="mb-6 text-center text-sm text-blue-100">
+            Check your email for a reset link
+          </p>
           <p className="text-center text-sm text-blue-100">
             <Link to="/login" className="font-semibold text-white underline">
               Back to sign in
@@ -56,7 +58,9 @@ export default function ForgotPassword() {
               {error}
             </p>
           )}
-          <SubmitButton disabled={submitting}>{submitting ? 'Sending…' : 'Send reset link'}</SubmitButton>
+          <SubmitButton disabled={submitting}>
+            {submitting ? 'Sending…' : 'Send reset link'}
+          </SubmitButton>
           <p className="mt-6 text-center text-sm text-blue-100">
             <Link to="/login" className="font-semibold text-white underline">
               Back to sign in

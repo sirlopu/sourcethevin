@@ -47,18 +47,18 @@ async function loadActionableOffer(
   if (!authorized) {
     return { error: 'not_found' };
   }
-  if (submission.status === 'accepted' || submission.status === 'declined' || submission.status === 'closed') {
+  if (
+    submission.status === 'accepted' ||
+    submission.status === 'declined' ||
+    submission.status === 'closed'
+  ) {
     return { error: 'not_pending' };
   }
   const latestOffer = await Offer.findOne({ submissionId: submission._id }).sort({ version: -1 });
   if (!latestOffer || latestOffer._id.toString() !== offer._id.toString()) {
     return { error: 'not_pending' };
   }
-  if (
-    allowDeclinedSellerCounter &&
-    user.role === 'seller' &&
-    offer.status === 'declined'
-  ) {
+  if (allowDeclinedSellerCounter && user.role === 'seller' && offer.status === 'declined') {
     return { offer, submission };
   }
   if (offer.status !== 'pending') {
@@ -168,8 +168,7 @@ offersRouter.post('/:id/decline', async (req: Request, res: Response) => {
     detail: buildOfferDeclinedDetail(offer),
   });
 
-  const declineBody =
-    `Your offer v${offer.version} on submission ${submission.referenceId} was declined. The trade is reopened for further negotiation.`;
+  const declineBody = `Your offer v${offer.version} on submission ${submission.referenceId} was declined. The trade is reopened for further negotiation.`;
   await notify({
     tenantId: submission.tenantId,
     submissionId: submission._id,

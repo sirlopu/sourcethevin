@@ -72,7 +72,9 @@ export default function ResetPassword() {
             {error}
           </p>
         )}
-        <SubmitButton disabled={submitting}>{submitting ? 'Resetting…' : 'Reset password'}</SubmitButton>
+        <SubmitButton disabled={submitting}>
+          {submitting ? 'Resetting…' : 'Reset password'}
+        </SubmitButton>
         <p className="mt-6 text-center text-sm text-blue-100">
           <Link to="/login" className="font-semibold text-white underline">
             Back to sign in

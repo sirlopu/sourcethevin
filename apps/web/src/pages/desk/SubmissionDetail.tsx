@@ -176,7 +176,15 @@ export default function SubmissionDetail() {
                 }
               />
               <Row label="Runs & drives" value={submission.condition.runsAndDrives ?? '—'} />
-              <Row label="Warning lights" value={formatWarningLights(submission.condition.warningLights ?? [], submission.condition.warningLightsDescription) ?? '—'} />
+              <Row
+                label="Warning lights"
+                value={
+                  formatWarningLights(
+                    submission.condition.warningLights ?? [],
+                    submission.condition.warningLightsDescription,
+                  ) ?? '—'
+                }
+              />
               <Row label="Structural" value={submission.condition.accidentHistory ?? '—'} />
               <Row
                 label="Cosmetic"
@@ -302,7 +310,9 @@ function OfferPanel({
   }, [latestOffer?._id, latestOffer?.status, latestOffer?.expiresAt]);
 
   const resolved =
-    submissionStatus === 'accepted' || submissionStatus === 'declined' || submissionStatus === 'closed';
+    submissionStatus === 'accepted' ||
+    submissionStatus === 'declined' ||
+    submissionStatus === 'closed';
   const isClosed = submissionStatus === 'closed';
 
   async function handleAcceptCounter() {
@@ -735,7 +745,9 @@ function ValuationWorkspacePanel({
             onChange={(e) => setNewSource(e.target.value)}
             className="mt-1 w-48 rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
           >
-            <option value="" disabled>Select</option>
+            <option value="" disabled>
+              Select
+            </option>
             <option value="MMR">MMR</option>
             <option value="KBB">KBB</option>
             <option value="CarMax">CarMax</option>
@@ -772,7 +784,9 @@ function ValuationWorkspacePanel({
           value={expenses.recon}
           onChange={(v) => setExpenses((c) => ({ ...c, recon: v }))}
         />
-        <ExpenseField className="col-span-2" label="Other"
+        <ExpenseField
+          className="col-span-2"
+          label="Other"
           value={expenses.other}
           onChange={(v) => setExpenses((c) => ({ ...c, other: v }))}
         />
@@ -782,12 +796,12 @@ function ValuationWorkspacePanel({
         <span className="text-xs font-semibold uppercase tracking-wide text-ink-500">
           Target margin
         </span>
-          <input
-            type="number"
-            value={targetMargin}
-            onChange={(event) => setTargetMargin(event.target.value)}
-            className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          />
+        <input
+          type="number"
+          value={targetMargin}
+          onChange={(event) => setTargetMargin(event.target.value)}
+          className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        />
       </label>
 
       {error && (

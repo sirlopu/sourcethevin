@@ -149,7 +149,10 @@ describe('App', () => {
     await user.type(screen.getByLabelText('Dealer license number (optional)'), 'DL-123');
     await user.type(screen.getByLabelText('Phone'), '555-0100');
     expect(screen.queryByLabelText('Password')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Terms & Conditions' })).toHaveAttribute('href', '/terms');
+    expect(screen.getByRole('link', { name: 'Terms & Conditions' })).toHaveAttribute(
+      'href',
+      '/terms',
+    );
 
     await user.click(screen.getByRole('button', { name: 'Request seller access' }));
 

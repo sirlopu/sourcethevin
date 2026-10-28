@@ -21,7 +21,8 @@ export interface SubmissionPhoto {
 export interface SubmissionRecord {
   _id: string;
   referenceId: string;
-  status: 'new' | 'submitted' | 'offer_sent' | 'in_negotiation' | 'accepted' | 'declined' | 'closed';
+  status:
+    'new' | 'submitted' | 'offer_sent' | 'in_negotiation' | 'accepted' | 'declined' | 'closed';
   currentStep: number;
   vin?: string;
   decoded?: {

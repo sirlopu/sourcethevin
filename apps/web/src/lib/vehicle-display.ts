@@ -24,10 +24,7 @@ export function formatVehicleMake(make: string | null | undefined): string {
   );
 }
 
-export function vehicleLabel(
-  vehicle: VehicleDisplayFields,
-  fallback = 'Vehicle',
-): string {
+export function vehicleLabel(vehicle: VehicleDisplayFields, fallback = 'Vehicle'): string {
   return (
     [vehicle.year, formatVehicleMake(vehicle.make), vehicle.model, vehicle.trim]
       .filter(Boolean)

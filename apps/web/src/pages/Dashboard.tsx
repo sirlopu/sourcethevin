@@ -93,7 +93,9 @@ export default function Dashboard() {
               Filter by status
               <select
                 value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as SubmissionStatus | 'all')}
+                onChange={(event) =>
+                  setStatusFilter(event.target.value as SubmissionStatus | 'all')
+                }
                 className="rounded-md border-[1.5px] border-ink-300 bg-white px-2.5 py-1.5 text-sm font-normal text-ink-900 outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/15"
               >
                 <option value="all">All statuses</option>
@@ -113,43 +115,43 @@ export default function Dashboard() {
             <div className="divide-y divide-ink-200 rounded-md border border-ink-200 bg-white">
               {filteredSubmissions.map((item) => {
                 const vehicle = vehicleLabel(item.vehicle, 'Untitled trade-in');
-              const badge = statusBadge(item.status);
-              const isDraft = item.status === 'new';
-              return (
-                <div key={item._id} className="flex items-center text-sm hover:bg-ink-50">
-                  <Link
-                    to={
-                      isDraft
-                        ? `/wizard/${item._id}/${item.currentStep}`
-                        : `/submissions/${item._id}`
-                    }
-                    className="flex min-w-0 flex-1 items-center justify-between gap-3 p-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-ink-900">{vehicle}</p>
-                      <p className="font-mono text-xs text-ink-500">{item.referenceId}</p>
-                    </div>
-                    <span
-                      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}
+                const badge = statusBadge(item.status);
+                const isDraft = item.status === 'new';
+                return (
+                  <div key={item._id} className="flex items-center text-sm hover:bg-ink-50">
+                    <Link
+                      to={
+                        isDraft
+                          ? `/wizard/${item._id}/${item.currentStep}`
+                          : `/submissions/${item._id}`
+                      }
+                      className="flex min-w-0 flex-1 items-center justify-between gap-3 p-3"
                     >
-                      ● {badge.label}
-                    </span>
-                  </Link>
-                  {isDraft && (
-                    <button
-                      type="button"
-                      disabled={deletingId === item._id}
-                      onClick={() => {
-                        void handleDelete(item, vehicle);
-                      }}
-                      aria-label={`Delete draft ${vehicle}`}
-                      className="mr-3 rounded px-2 py-1 text-xs font-semibold text-danger hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {deletingId === item._id ? 'Deleting…' : 'Delete'}
-                    </button>
-                  )}
-                </div>
-              );
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-ink-900">{vehicle}</p>
+                        <p className="font-mono text-xs text-ink-500">{item.referenceId}</p>
+                      </div>
+                      <span
+                        className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}
+                      >
+                        ● {badge.label}
+                      </span>
+                    </Link>
+                    {isDraft && (
+                      <button
+                        type="button"
+                        disabled={deletingId === item._id}
+                        onClick={() => {
+                          void handleDelete(item, vehicle);
+                        }}
+                        aria-label={`Delete draft ${vehicle}`}
+                        className="mr-3 rounded px-2 py-1 text-xs font-semibold text-danger hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {deletingId === item._id ? 'Deleting…' : 'Delete'}
+                      </button>
+                    )}
+                  </div>
+                );
               })}
             </div>
           )}

@@ -337,15 +337,15 @@ submissionsRouter.post(
       res.status(404).json({ error: 'Submission not found' });
       return;
     }
-  if (submission.status !== 'new') {
-    res.status(409).json({ error: 'This submission has already been submitted' });
-    return;
-  }
+    if (submission.status !== 'new') {
+      res.status(409).json({ error: 'This submission has already been submitted' });
+      return;
+    }
 
-  submission.status = 'submitted';
-  submission.currentStep = 6;
-  submission.submittedAt = new Date();
-  await submission.save();
+    submission.status = 'submitted';
+    submission.currentStep = 6;
+    submission.submittedAt = new Date();
+    await submission.save();
 
     await AuditLog.create({
       tenantId: submission.tenantId,
@@ -543,7 +543,11 @@ submissionsRouter.post(
       res.status(409).json({ error: 'This submission has not been submitted yet' });
       return;
     }
-    if (submission.status === 'accepted' || submission.status === 'declined' || submission.status === 'closed') {
+    if (
+      submission.status === 'accepted' ||
+      submission.status === 'declined' ||
+      submission.status === 'closed'
+    ) {
       res.status(409).json({ error: 'This trade has already been resolved' });
       return;
     }
@@ -610,7 +614,11 @@ submissionsRouter.post(
       res.status(404).json({ error: 'Submission not found' });
       return;
     }
-    if (submission.status === 'accepted' || submission.status === 'declined' || submission.status === 'closed') {
+    if (
+      submission.status === 'accepted' ||
+      submission.status === 'declined' ||
+      submission.status === 'closed'
+    ) {
       res.status(409).json({ error: 'This trade has already been resolved' });
       return;
     }
@@ -656,7 +664,11 @@ submissionsRouter.post(
       res.status(404).json({ error: 'Submission not found' });
       return;
     }
-    if (submission.status === 'accepted' || submission.status === 'declined' || submission.status === 'closed') {
+    if (
+      submission.status === 'accepted' ||
+      submission.status === 'declined' ||
+      submission.status === 'closed'
+    ) {
       res.status(409).json({ error: 'This trade has already been resolved' });
       return;
     }

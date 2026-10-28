@@ -7,7 +7,12 @@ import { ApiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
 import { useAutosave } from '../../lib/useAutosave';
 import { patchSubmission } from '../../lib/wizard-api';
-import { WARNING_LIGHTS_OPTIONS, WARNING_LIGHT_LABELS, type Condition, type WarningLightsOption } from '@sourcethevin/shared';
+import {
+  WARNING_LIGHTS_OPTIONS,
+  WARNING_LIGHT_LABELS,
+  type Condition,
+  type WarningLightsOption,
+} from '@sourcethevin/shared';
 type RunsAndDrives = NonNullable<Condition['runsAndDrives']>;
 type WarningLights = WarningLightsOption[];
 type AccidentHistory = NonNullable<Condition['accidentHistory']>;
@@ -25,7 +30,9 @@ export default function Step3Condition({ submission, onSaved, onContinue }: Wiza
   const { authFetch } = useAuth();
   const c = submission.condition;
   const [runsAndDrives, setRunsAndDrives] = useState<RunsAndDrives | null>(c.runsAndDrives ?? null);
-  const [warningLights, setWarningLights] = useState<WarningLights>(normalizeWarningLights(c.warningLights));
+  const [warningLights, setWarningLights] = useState<WarningLights>(
+    normalizeWarningLights(c.warningLights),
+  );
   const [warningLightsDescription, setWarningLightsDescription] = useState(
     c.warningLightsDescription ?? '',
   );

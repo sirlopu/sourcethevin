@@ -7,7 +7,13 @@ import { getSellerRequestRecipients, notify } from '../lib/notifications';
 import { DEFAULT_TENANT_ID } from '../lib/tenant';
 import { generateRefreshToken, hashRefreshToken, signAccessToken } from '../lib/tokens';
 import { User } from '../models/User';
-import { changePasswordSchema, loginSchema, registerSellerRequestSchema, requestPasswordResetSchema, resetPasswordSchema } from '../validation/auth';
+import {
+  changePasswordSchema,
+  loginSchema,
+  registerSellerRequestSchema,
+  requestPasswordResetSchema,
+  resetPasswordSchema,
+} from '../validation/auth';
 import { buildEmailHtml, sendEmail } from '../lib/email';
 
 const REFRESH_COOKIE_NAME = 'refreshToken';
@@ -199,7 +205,9 @@ authRouter.post('/forgot-password', async (req: Request, res: Response) => {
   }
   const { email } = parsed.data;
 
-  const user = await User.findOne({ email, status: { $ne: 'suspended' } }).select('+passwordResetTokenHash +passwordResetExpiresAt');
+  const user = await User.findOne({ email, status: { $ne: 'suspended' } }).select(
+    '+passwordResetTokenHash +passwordResetExpiresAt',
+  );
   if (!user) {
     res.status(404).json({ error: 'There is no account associated with that email.' });
     return;

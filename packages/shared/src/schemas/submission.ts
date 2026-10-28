@@ -45,7 +45,9 @@ export function formatWarningLights(
   if (warningLights.includes('other') && warningLightsDescription?.trim()) {
     const specific = warningLights.filter((w) => w !== 'other');
     const labels = specific.map((w) => WARNING_LIGHT_LABELS[w]);
-    return labels.length > 0 ? `${labels.join(', ')}, ${warningLightsDescription.trim()}` : warningLightsDescription.trim();
+    return labels.length > 0
+      ? `${labels.join(', ')}, ${warningLightsDescription.trim()}`
+      : warningLightsDescription.trim();
   }
   return warningLights.map((w) => WARNING_LIGHT_LABELS[w]).join(', ');
 }

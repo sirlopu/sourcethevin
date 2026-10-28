@@ -214,9 +214,7 @@ describe('SubmissionDetail closed submission', () => {
     renderPage();
 
     await screen.findByText('Trade closed');
-    expect(
-      screen.getByText(/No further offers or counters are possible/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/No further offers or counters are possible/)).toBeInTheDocument();
     expect(screen.queryByText('v1 · $1,000')).not.toBeInTheDocument();
   });
 
@@ -226,9 +224,7 @@ describe('SubmissionDetail closed submission', () => {
     renderPage();
 
     await screen.findByText('Trade closed');
-    expect(
-      screen.getByText(/No further offers or counters are possible/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/No further offers or counters are possible/)).toBeInTheDocument();
     expect(screen.queryByText('No offer sent yet.')).not.toBeInTheDocument();
   });
 });

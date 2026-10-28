@@ -112,7 +112,10 @@ describe('Dashboard', () => {
     });
     renderDashboard();
 
-    await user.selectOptions(await screen.findByRole('combobox', { name: 'Filter by status' }), 'new');
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'Filter by status' }),
+      'new',
+    );
 
     expect(await screen.findByText('No recent submissions match this status.')).toBeInTheDocument();
   });
@@ -130,8 +133,12 @@ describe('Dashboard', () => {
     );
 
     await user.click(deleteButton);
-    await waitFor(() => expect(mocks.deleteSubmission).toHaveBeenCalledWith(mocks.authFetch, 'new'));
-    expect(confirm).toHaveBeenCalledWith('Delete the draft for 2021 BMW Model? This cannot be undone.');
+    await waitFor(() =>
+      expect(mocks.deleteSubmission).toHaveBeenCalledWith(mocks.authFetch, 'new'),
+    );
+    expect(confirm).toHaveBeenCalledWith(
+      'Delete the draft for 2021 BMW Model? This cannot be undone.',
+    );
     expect(screen.queryByText('2021 BMW Model')).not.toBeInTheDocument();
   });
 

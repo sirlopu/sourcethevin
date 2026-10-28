@@ -88,13 +88,9 @@ export default function SubmissionView() {
           <AcceptedTimeline submission={submission} auditEntries={auditEntries} />
         )}
 
-        {submission.status === 'declined' && (
-          <DeclinedCard submission={submission} />
-        )}
+        {submission.status === 'declined' && <DeclinedCard submission={submission} />}
 
-        {submission.status === 'closed' && (
-          <ClosedCard submission={submission} />
-        )}
+        {submission.status === 'closed' && <ClosedCard submission={submission} />}
 
         {submission.status !== 'accepted' &&
           submission.status !== 'declined' &&
@@ -120,9 +116,10 @@ export default function SubmissionView() {
             <WaitingCard message="We've received your counter-offer and are reviewing it." />
           )}
 
-        {submission.status !== 'accepted' && submission.status !== 'declined' && submission.status !== 'closed' && !offer && (
-          <WaitingCard message="Your trade-in is under review." />
-        )}
+        {submission.status !== 'accepted' &&
+          submission.status !== 'declined' &&
+          submission.status !== 'closed' &&
+          !offer && <WaitingCard message="Your trade-in is under review." />}
 
         <div className="mt-6">
           <MessageThread submissionId={id} currentUserRole="seller" />
@@ -321,7 +318,8 @@ function OfferReviewCard({
 
         {declinedCounter && (
           <p className="mt-4 rounded-md border border-red-300/40 bg-red-950/40 p-3 text-center text-sm font-semibold text-red-100">
-            The Trade Desk declined your counter. You can propose a new amount while this trade remains open.
+            The Trade Desk declined your counter. You can propose a new amount while this trade
+            remains open.
           </p>
         )}
         {declinedDeskOffer && (

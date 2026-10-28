@@ -186,8 +186,7 @@ describe('offer negotiation status', () => {
   it('sets in_negotiation (not declined) when a seller declines a desk offer', async () => {
     const { offer, submission } = setupOffer();
 
-    const response = await request(createTestApp('seller'))
-      .post('/offers/offer-1/decline');
+    const response = await request(createTestApp('seller')).post('/offers/offer-1/decline');
 
     expect(response.status).toBe(200);
     expect(offer.status).toBe('declined');
@@ -220,8 +219,7 @@ describe('offer negotiation status', () => {
     offer.status = 'declined';
     submission.status = 'in_negotiation';
 
-    const response = await request(createTestApp('seller'))
-      .post('/offers/offer-1/accept');
+    const response = await request(createTestApp('seller')).post('/offers/offer-1/accept');
 
     expect(response.status).toBe(409);
   });
@@ -232,8 +230,7 @@ describe('offer negotiation status', () => {
     offer.status = 'declined';
     submission.status = 'in_negotiation';
 
-    const response = await request(createTestApp('seller'))
-      .post('/offers/offer-1/decline');
+    const response = await request(createTestApp('seller')).post('/offers/offer-1/decline');
 
     expect(response.status).toBe(409);
   });
