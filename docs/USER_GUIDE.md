@@ -265,13 +265,13 @@ Use the **Messages** section at the bottom of each submission to talk with the s
 
 ### 5.1 Users & roles
 
-Your home page lists every user with their organisation, role, status and last activity. Your own account is marked "(you)".
+Your home page lists every user with their first and last name, email, organisation, role, status and last activity. Your own account is marked "(you)".
 
 ### 5.2 Inviting a user
 
 1. Click **+ Invite user**.
 2. Enter the email and choose a role: **Seller**, **Trade Desk** or **Administrator**.
-3. For sellers, also enter the dealership name, license number and phone (phone is required).
+3. For sellers, also enter the dealership name and phone (both required) and, optionally, the license number.
 4. Click **Create account**.
 
 A temporary password appears in a yellow box and is emailed to the user. **It won't be shown again.** Click **Dismiss** when you're done. The user must choose a new password the first time they sign in.
@@ -285,14 +285,15 @@ Pending requests appear as banners at the top of the page, showing the email, de
 
 > Always use **Approve** for pending sellers rather than editing their status. Approve sends the welcome notification.
 
-### 5.4 Changing a user's role or status
+### 5.4 Editing a user
 
 1. Click **Edit** on the user's row.
-2. Choose a role: Seller ("Submit & track trade-ins"), Trade Desk ("Value & make offers") or Administrator ("Manage users").
-3. Choose a status: **Active** or **Suspended**. Suspended users are blocked immediately and can't sign in.
-4. Click **Save**. The user is notified.
+2. Update the first and last name if needed. For sellers with a dealership, you can also update the dealership name (required) and license number (optional).
+3. Choose a role: Seller ("Submit & track trade-ins"), Trade Desk ("Value & make offers") or Administrator ("Manage users").
+4. Choose a status: **Active** or **Suspended**. Suspended users are blocked immediately and can't sign in.
+5. Click **Save**. The user is notified of role and status changes.
 
-You can't change your own role or status. Ask another administrator.
+You can edit your own name, but not your own role or status. Ask another administrator.
 
 ### 5.5 Resetting a password
 

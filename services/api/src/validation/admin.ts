@@ -14,7 +14,7 @@ export const inviteUserSchema = z
     role: z.enum(USER_ROLES),
     dealership: z
       .object({
-        name: optionalTrimmedString,
+        name: z.string().trim().min(1),
         licenseNumber: optionalTrimmedString,
         phone: z.string().trim().min(1),
       })
@@ -37,6 +37,18 @@ export const inviteUserSchema = z
     }
   });
 export type InviteUserInput = z.infer<typeof inviteUserSchema>;
+
+export const updateUserProfileSchema = z.object({
+  firstName: z.string().trim().min(1),
+  lastName: z.string().trim().min(1),
+  dealership: z
+    .object({
+      name: z.string().trim().min(1),
+      licenseNumber: optionalTrimmedString,
+    })
+    .optional(),
+});
+export type UpdateUserProfileInput = z.infer<typeof updateUserProfileSchema>;
 
 export const updateUserRoleSchema = z.object({ role: z.enum(USER_ROLES) });
 export const updateUserStatusSchema = z.object({ status: z.enum(['active', 'suspended']) });

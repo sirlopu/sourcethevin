@@ -1,29 +1,43 @@
 import { describe, expect, it } from 'vitest';
-import { inviteUserSchema } from './admin';
+import { inviteUserSchema, updateUserProfileSchema } from './admin';
 
 describe('inviteUserSchema', () => {
-  it('allows a seller invitation without a dealership name or license number', () => {
+  it('allows a seller invitation without a license number', () => {
     const result = inviteUserSchema.safeParse({
       firstName: 'Seller',
       lastName: 'User',
       email: 'seller@example.com',
       role: 'seller',
-      dealership: { phone: '555-0100' },
+      dealership: { name: 'Acme Motors', phone: '555-0100' },
     });
 
     expect(result.success).toBe(true);
   });
 
-  it('omits blank optional dealership fields', () => {
+  it('requires a non-blank dealership name for seller invitations', () => {
+    for (const dealership of [{ phone: '555-0100' }, { name: '   ', phone: '555-0100' }]) {
+      const result = inviteUserSchema.safeParse({
+        firstName: 'Seller',
+        lastName: 'User',
+        email: 'seller@example.com',
+        role: 'seller',
+        dealership,
+      });
+
+      expect(result.success).toBe(false);
+    }
+  });
+
+  it('trims the dealership name and omits a blank license number', () => {
     const result = inviteUserSchema.parse({
       firstName: ' Seller ',
       lastName: ' User ',
       email: 'seller@example.com',
       role: 'seller',
-      dealership: { name: '   ', licenseNumber: '', phone: '555-0100' },
+      dealership: { name: ' Acme Motors ', licenseNumber: '', phone: '555-0100' },
     });
 
-    expect(result.dealership).toEqual({ phone: '555-0100' });
+    expect(result.dealership).toEqual({ name: 'Acme Motors', phone: '555-0100' });
     expect(result.firstName).toBe('Seller');
     expect(result.lastName).toBe('User');
   });
@@ -34,7 +48,7 @@ describe('inviteUserSchema', () => {
       lastName: 'User',
       email: 'seller@example.com',
       role: 'seller',
-      dealership: {},
+      dealership: { name: 'Acme Motors' },
     });
 
     expect(result.success).toBe(false);
@@ -71,5 +85,43 @@ describe('inviteUserSchema', () => {
 
     expect(result.firstName).toBe('Trade');
     expect(result.lastName).toBe('Desk');
+  });
+});
+
+describe('updateUserProfileSchema', () => {
+  it('trims names and dealership fields and omits a blank license number', () => {
+    const result = updateUserProfileSchema.parse({
+      firstName: ' Pat ',
+      lastName: ' Lee ',
+      dealership: { name: ' Acme Motors ', licenseNumber: '  ' },
+    });
+
+    expect(result).toEqual({
+      firstName: 'Pat',
+      lastName: 'Lee',
+      dealership: { name: 'Acme Motors' },
+    });
+  });
+
+  it('allows updating names without dealership details', () => {
+    expect(updateUserProfileSchema.safeParse({ firstName: 'Pat', lastName: 'Lee' }).success).toBe(
+      true,
+    );
+  });
+
+  it('rejects blank names and a blank dealership name', () => {
+    expect(updateUserProfileSchema.safeParse({ firstName: ' ', lastName: 'Lee' }).success).toBe(
+      false,
+    );
+    expect(updateUserProfileSchema.safeParse({ firstName: 'Pat', lastName: '' }).success).toBe(
+      false,
+    );
+    expect(
+      updateUserProfileSchema.safeParse({
+        firstName: 'Pat',
+        lastName: 'Lee',
+        dealership: { name: '  ' },
+      }).success,
+    ).toBe(false);
   });
 });

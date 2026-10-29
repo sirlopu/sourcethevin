@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../lib/api';
 import {
   listAdminUsers,
+  updateUserProfile,
   updateUserRole,
   updateUserStatus,
   type AdminUserRecord,
@@ -10,6 +11,9 @@ import {
 } from '../lib/admin-api';
 import { useAuth } from '../lib/auth-context';
 import type { Role } from '../lib/role';
+
+const INPUT_CLASS =
+  'mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500';
 
 const ROLE_OPTIONS: Array<{ value: Role; label: string; subtext: string }> = [
   { value: 'seller', label: 'Seller', subtext: 'Submit & track trade-ins' },
@@ -28,6 +32,10 @@ export default function AdminUserEdit() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [dealershipName, setDealershipName] = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
   const [role, setRole] = useState<Role>('seller');
   const [status, setStatus] = useState<'active' | 'suspended'>('active');
 
@@ -43,6 +51,10 @@ export default function AdminUserEdit() {
         }
         setTarget(found);
         setTenant(result.tenant);
+        setFirstName(found.firstName ?? '');
+        setLastName(found.lastName ?? '');
+        setDealershipName(found.dealership?.name ?? '');
+        setLicenseNumber(found.dealership?.licenseNumber ?? '');
         setRole(found.role);
         setStatus(found.status === 'suspended' ? 'suspended' : 'active');
       })
@@ -57,15 +69,36 @@ export default function AdminUserEdit() {
 
   const isSelf = target !== null && target.id === currentUser?.id;
 
-  async function handleSave() {
+  async function handleSave(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     if (!target) return;
     setSaving(true);
     setError(null);
     try {
-      if (role !== target.role) {
+      const profileChanged =
+        firstName.trim() !== (target.firstName ?? '') ||
+        lastName.trim() !== (target.lastName ?? '') ||
+        (target.dealership !== null &&
+          (dealershipName.trim() !== (target.dealership.name ?? '') ||
+            licenseNumber.trim() !== (target.dealership.licenseNumber ?? '')));
+      if (profileChanged) {
+        await updateUserProfile(authFetch, target.id, {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          ...(target.dealership
+            ? {
+                dealership: {
+                  name: dealershipName.trim(),
+                  ...(licenseNumber.trim() ? { licenseNumber: licenseNumber.trim() } : {}),
+                },
+              }
+            : {}),
+        });
+      }
+      if (!isSelf && role !== target.role) {
         await updateUserRole(authFetch, target.id, role);
       }
-      if (status !== target.status) {
+      if (!isSelf && status !== target.status) {
         await updateUserStatus(authFetch, target.id, status);
       }
       navigate('/admin/users');
@@ -99,7 +132,7 @@ export default function AdminUserEdit() {
         </span>
         <div>
           <h1 className="font-display text-xl font-bold text-navy-900">{target.email}</h1>
-          <p className="text-xs text-ink-500">Edit user — role assignment</p>
+          <p className="text-xs text-ink-500">Edit user — profile &amp; role assignment</p>
         </div>
       </div>
 
@@ -110,7 +143,65 @@ export default function AdminUserEdit() {
       )}
 
       <div className="mt-6 grid grid-cols-1 gap-8 md:grid-cols-[2fr_1fr]">
-        <div className="space-y-5 rounded-md border border-ink-200 bg-white p-5">
+        <form
+          onSubmit={(event) => {
+            void handleSave(event);
+          }}
+          className="space-y-5 rounded-md border border-ink-200 bg-white p-5"
+        >
+          <fieldset className="space-y-3">
+            <legend className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+              Profile
+            </legend>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-xs font-semibold text-ink-700">First name</span>
+                <input
+                  type="text"
+                  autoComplete="off"
+                  required
+                  value={firstName}
+                  onChange={(event) => setFirstName(event.target.value)}
+                  className={INPUT_CLASS}
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold text-ink-700">Last name</span>
+                <input
+                  type="text"
+                  autoComplete="off"
+                  required
+                  value={lastName}
+                  onChange={(event) => setLastName(event.target.value)}
+                  className={INPUT_CLASS}
+                />
+              </label>
+              {target.dealership && (
+                <>
+                  <label className="block">
+                    <span className="text-xs font-semibold text-ink-700">Dealership name</span>
+                    <input
+                      type="text"
+                      required
+                      value={dealershipName}
+                      onChange={(event) => setDealershipName(event.target.value)}
+                      className={INPUT_CLASS}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs font-semibold text-ink-700">License # (optional)</span>
+                    <input
+                      type="text"
+                      value={licenseNumber}
+                      onChange={(event) => setLicenseNumber(event.target.value)}
+                      className={INPUT_CLASS}
+                    />
+                  </label>
+                </>
+              )}
+            </div>
+          </fieldset>
+
           {isSelf && (
             <p className="rounded-md bg-ink-50 px-3 py-2 text-xs text-ink-600">
               You can&rsquo;t change your own role or status. Ask another administrator to make this
@@ -166,11 +257,8 @@ export default function AdminUserEdit() {
 
           <div className="flex gap-2 pt-2">
             <button
-              type="button"
-              disabled={isSelf || saving}
-              onClick={() => {
-                void handleSave();
-              }}
+              type="submit"
+              disabled={saving}
               className="rounded-md bg-navy-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-navy-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? 'Saving…' : 'Save'}
@@ -183,7 +271,7 @@ export default function AdminUserEdit() {
               Cancel
             </button>
           </div>
-        </div>
+        </form>
 
         <div className="space-y-3 rounded-md border border-ink-200 bg-white p-5">
           <span className="inline-flex items-center rounded-full bg-ink-100 px-2 py-0.5 text-xs font-semibold text-ink-600">

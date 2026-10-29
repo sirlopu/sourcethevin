@@ -95,6 +95,35 @@ describe('AdminUsers invite form', () => {
 
     await user.selectOptions(screen.getByRole('combobox', { name: 'Role' }), 'seller');
     expect(screen.getByRole('textbox', { name: 'Phone' })).toBeRequired();
-    expect(screen.getByRole('textbox', { name: 'Dealership name (optional)' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Dealership name' })).toBeRequired();
+  });
+});
+
+describe('AdminUsers table', () => {
+  it('shows first and last name columns', async () => {
+    mocks.listAdminUsers.mockResolvedValue({
+      items: [
+        {
+          id: 'desk-1',
+          firstName: 'Taylor',
+          lastName: 'Morgan',
+          email: 'desk@example.com',
+          role: 'trade_desk',
+          status: 'active',
+          mustChangePassword: false,
+          dealership: null,
+          lastActiveAt: '2026-01-01T00:00:00.000Z',
+          createdAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+      pendingCount: 0,
+      tenant: { id: 'tenant-1', environment: 'test', activeUserCount: 1, transport: 'HTTPS / TLS' },
+    });
+    renderPage();
+
+    expect(await screen.findByRole('columnheader', { name: 'First name' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Last name' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: /Taylor/ })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: /Morgan/ })).toBeInTheDocument();
   });
 });
