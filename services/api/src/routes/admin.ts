@@ -8,6 +8,7 @@ import { requireRole } from '../middleware/requireRole';
 import { User, type UserDocument } from '../models/User';
 import {
   inviteUserSchema,
+  updateUserProfileSchema,
   updateUserRoleSchema,
   updateUserStatusSchema,
 } from '../validation/admin';
@@ -107,6 +108,38 @@ adminRouter.post('/users', async (req: Request, res: Response) => {
   }).catch((err) => console.error(`[admin:invite email] failed for ${user.email}`, err));
 
   res.status(201).json({ user: serializeUser(user), temporaryPassword });
+});
+
+adminRouter.patch('/users/:id/profile', async (req: Request, res: Response) => {
+  const parsed = updateUserProfileSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  const user = await User.findOne({ _id: paramId(req), tenantId: req.user!.tenantId }).catch(
+    () => null,
+  );
+  if (!user) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  const { firstName, lastName, dealership } = parsed.data;
+  if (dealership && !user.dealership) {
+    res.status(400).json({ error: 'This user has no dealership to update' });
+    return;
+  }
+
+  user.firstName = firstName;
+  user.lastName = lastName;
+  if (dealership && user.dealership) {
+    user.dealership.name = dealership.name;
+    user.dealership.licenseNumber = dealership.licenseNumber;
+  }
+  await user.save();
+
+  res.status(200).json(serializeUser(user));
 });
 
 adminRouter.patch('/users/:id/role', async (req: Request, res: Response) => {

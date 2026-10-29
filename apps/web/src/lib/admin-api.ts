@@ -59,6 +59,18 @@ export function resetUserPassword(authFetch: AuthFetch, id: string) {
   );
 }
 
+export interface UpdateUserProfileInput {
+  firstName: string;
+  lastName: string;
+  dealership?: { name: string; licenseNumber?: string };
+}
+
+export function updateUserProfile(authFetch: AuthFetch, id: string, input: UpdateUserProfileInput) {
+  return parseJson<AdminUserRecord>(
+    authFetch(`/admin/users/${id}/profile`, { method: 'PATCH', body: JSON.stringify(input) }),
+  );
+}
+
 export function updateUserRole(authFetch: AuthFetch, id: string, role: Role) {
   return parseJson<AdminUserRecord>(
     authFetch(`/admin/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),

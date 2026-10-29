@@ -133,7 +133,9 @@ export default function AdminUsers() {
           <table className="block w-full text-left text-sm xl:table">
             <thead className="hidden bg-ink-50 text-xs font-semibold uppercase tracking-wide text-ink-500 xl:table-header-group">
               <tr>
-                <th className="px-4 py-3">User</th>
+                <th className="whitespace-nowrap px-4 py-3">First name</th>
+                <th className="whitespace-nowrap px-4 py-3">Last name</th>
+                <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Org</th>
                 <th className="px-4 py-3">Role</th>
                 <th className="px-4 py-3">Status</th>
@@ -149,7 +151,16 @@ export default function AdminUsers() {
                     key={item.id}
                     className="block min-w-0 rounded-md border border-ink-200 p-4 xl:table-row xl:rounded-none xl:border-0 xl:border-t xl:p-0"
                   >
-                    <td className="block pb-3 [overflow-wrap:anywhere] xl:table-cell xl:px-4 xl:py-3">
+                    <td className="block pb-2 text-ink-900 [overflow-wrap:anywhere] xl:table-cell xl:px-4 xl:py-3">
+                      <span className="mb-1 block text-xs text-ink-500 xl:hidden">First name</span>
+                      {item.firstName || '—'}
+                    </td>
+                    <td className="block py-2 text-ink-900 [overflow-wrap:anywhere] xl:table-cell xl:px-4 xl:py-3">
+                      <span className="mb-1 block text-xs text-ink-500 xl:hidden">Last name</span>
+                      {item.lastName || '—'}
+                    </td>
+                    <td className="block py-2 [overflow-wrap:anywhere] xl:table-cell xl:px-4 xl:py-3">
+                      <span className="mb-1 block text-xs text-ink-500 xl:hidden">Email</span>
                       <p className="font-semibold text-ink-900">{item.email}</p>
                       {item.id === currentUser?.id && <p className="text-xs text-ink-500">(you)</p>}
                     </td>
@@ -351,7 +362,7 @@ function InviteUserForm({
         dealership:
           role === 'seller'
             ? {
-                ...(dealershipName.trim() ? { name: dealershipName } : {}),
+                name: dealershipName.trim(),
                 ...(licenseNumber.trim() ? { licenseNumber } : {}),
                 phone,
               }
@@ -422,8 +433,9 @@ function InviteUserForm({
       {role === 'seller' && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <label className="block">
-            <span className="text-xs font-semibold text-ink-700">Dealership name (optional)</span>
+            <span className="text-xs font-semibold text-ink-700">Dealership name</span>
             <input
+              required
               value={dealershipName}
               onChange={(event) => setDealershipName(event.target.value)}
               className="mt-1 w-full rounded-md border-[1.5px] border-ink-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500"
